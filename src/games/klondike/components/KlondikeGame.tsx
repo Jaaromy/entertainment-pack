@@ -13,6 +13,7 @@ export default function KlondikeGame() {
     state,
     canUndo,
     canRecycleStock,
+    forceWin,
     selection,
     dragSource,
     dragOverTarget,
@@ -67,6 +68,7 @@ export default function KlondikeGame() {
 
   return (
     <div className="klondike-game">
+      <div className="klondike-board">
       {/* Header */}
       <div className="klondike-header">
         <span className="klondike-title">Solitaire</span>
@@ -79,6 +81,11 @@ export default function KlondikeGame() {
         {canAutoComplete && (
           <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
             Auto-Complete
+          </button>
+        )}
+        {forceWin && (
+          <button className="klondike-btn" onClick={forceWin} style={{ opacity: 0.5 }}>
+            Force Win
           </button>
         )}
         <button className="klondike-btn" onClick={handleNewGame} style={{ marginLeft: 'auto' }}>
@@ -144,6 +151,7 @@ export default function KlondikeGame() {
           />
         ))}
       </div>
+      </div>{/* end .klondike-board */}
 
       {/* Win overlay */}
       {state.status === 'won' && (

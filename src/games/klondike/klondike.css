@@ -9,6 +9,12 @@
   user-select: none;
 }
 
+/* ---- Centered board container ---- */
+.klondike-board {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
 /* ---- Header ---- */
 .klondike-header {
   display: flex;
@@ -315,7 +321,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 900;
+  z-index: 1100;
 }
 
 .dialog-box {
@@ -375,4 +381,65 @@
 
 .dialog-actions .klondike-btn--primary:hover {
   background: rgba(255,214,0,0.4);
+}
+
+/* =========================================================
+   Stats screen
+   ========================================================= */
+
+.stats-screen {
+  padding: 24px 20px;
+  flex: 1;
+}
+
+.stats-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  margin-bottom: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.stats-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.stats-card-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffd600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stats-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.88rem;
+}
+
+.stat-label {
+  color: rgba(255,255,255,0.65);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #fff;
 }

@@ -31,6 +31,7 @@ interface UseKlondikeReturn {
   state: GameState;
   canUndo: boolean;
   canRecycleStock: boolean;
+  forceWin: (() => void) | null;
   selection: Selection | null;
   dragSource: DragSource | null;
   dragOverTarget: { area: string; pile: number } | null;
@@ -339,6 +340,10 @@ export function useKlondike(): UseKlondikeReturn {
     setGwh(createGame(seed, drawMode, scoringMode));
   }, []);
 
+  const forceWin = import.meta.env.DEV
+    ? () => commit({ ...stateRef.current, status: 'won' })
+    : null;
+
   const doAutoComplete = useCallback(() => {
     setSelection(null);
     const newState = autoMoveToFoundation(state);
@@ -362,6 +367,7 @@ export function useKlondike(): UseKlondikeReturn {
     onDragEnd,
     onDragOver,
     onDrop,
+    forceWin,
     doUndo,
     startNewGame,
     canAutoComplete: checkCanAutoComplete(state),

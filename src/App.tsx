@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import KlondikeGame from './games/klondike/components/KlondikeGame'
 import CardGallery from './games/klondike/components/CardGallery'
+import StatsScreen from './games/klondike/components/StatsScreen'
+import './games/klondike/klondike.css'
+
+type View = 'game' | 'stats' | 'gallery'
 
 export default function App() {
-  const [view, setView] = useState<'game' | 'gallery'>('game')
+  const [view, setView] = useState<View>('game')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#007800' }}>
@@ -14,11 +18,16 @@ export default function App() {
         <button onClick={() => setView('game')} style={tabStyle(view === 'game')}>
           Game
         </button>
+        <button onClick={() => setView('stats')} style={tabStyle(view === 'stats')}>
+          Stats
+        </button>
         <button onClick={() => setView('gallery')} style={tabStyle(view === 'gallery')}>
           Card Gallery
         </button>
       </div>
-      {view === 'game' ? <KlondikeGame /> : <CardGallery />}
+      {view === 'game' && <KlondikeGame />}
+      {view === 'stats' && <StatsScreen />}
+      {view === 'gallery' && <CardGallery />}
     </div>
   )
 }
