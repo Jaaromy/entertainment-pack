@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { DrawMode, ScoringMode, CardLocation } from '../types';
 import { useKlondike } from '../hooks/useKlondike';
+import { loadSettings, saveSettings } from '../storage';
 import StockPile from './StockPile';
 import WastePile from './WastePile';
 import FoundationPile from './FoundationPile';
@@ -32,6 +33,16 @@ export default function KlondikeGame() {
   } = useKlondike();
 
   const [showDialog, setShowDialog] = useState(false);
+  const [cardSize, setCardSize] = useState<'normal' | 'large'>(
+    () => loadSettings()?.cardSize ?? 'normal'
+  );
+
+  const toggleCardSize = () => {
+    const next = cardSize === 'normal' ? 'large' : 'normal';
+    setCardSize(next);
+    const current = loadSettings();
+    saveSettings({ drawMode: state.drawMode, scoringMode: state.scoringMode, ...current, cardSize: next });
+  };
 
   const handleNewGame = () => setShowDialog(true);
 
@@ -68,29 +79,36 @@ export default function KlondikeGame() {
 
   return (
     <div className="klondike-game">
-      <div className="klondike-board">
+      <div className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}>
       {/* Header */}
       <div className="klondike-header">
-        <span className="klondike-title">Solitaire</span>
-        <span className="klondike-score">
-          Score: {scoreDisplay} &nbsp;|&nbsp; Moves: {state.moves}
-        </span>
-        <button className="klondike-btn" onClick={doUndo} disabled={!canUndo}>
-          Undo
-        </button>
-        {canAutoComplete && (
-          <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
-            Auto-Complete
+        <div className="klondike-header-left">
+          <span className="klondike-title">Solitaire</span>
+          <span className="klondike-score">
+            Score: {scoreDisplay} &nbsp;|&nbsp; Moves: {state.moves}
+          </span>
+          <button className="klondike-btn" onClick={doUndo} disabled={!canUndo}>
+            Undo
           </button>
-        )}
-        {forceWin && (
-          <button className="klondike-btn" onClick={forceWin} style={{ opacity: 0.5 }}>
-            Force Win
+          {canAutoComplete && (
+            <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
+              Auto-Complete
+            </button>
+          )}
+          {forceWin && (
+            <button className="klondike-btn" onClick={forceWin} style={{ opacity: 0.5 }}>
+              Force Win
+            </button>
+          )}
+        </div>
+        <div className="klondike-header-right">
+          <button className="klondike-btn" onClick={toggleCardSize}>
+            {cardSize === 'normal' ? 'Large' : 'Normal'}
           </button>
-        )}
-        <button className="klondike-btn" onClick={handleNewGame} style={{ marginLeft: 'auto' }}>
-          New Game
-        </button>
+          <button className="klondike-btn" onClick={handleNewGame}>
+            New Game
+          </button>
+        </div>
       </div>
 
       {/* Top row */}

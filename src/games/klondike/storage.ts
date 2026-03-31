@@ -7,6 +7,7 @@ const KEY_GAME     = 'ep:game';
 export interface StoredSettings {
   drawMode: DrawMode;
   scoringMode: ScoringMode;
+  cardSize?: 'normal' | 'large';
 }
 
 export interface ModeStats {

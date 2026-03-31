@@ -62,7 +62,7 @@ export default function TableauPile({
     offsets.push(totalOffset);
     if (i < cards.length - 1) {
       const card = cards[i]!;
-      totalOffset += card.faceUp ? 30 : 20;
+      totalOffset += card.faceUp ? 25 : 8;
     }
   }
   const containerHeight = cards.length === 0 ? 100 : totalOffset + 100;

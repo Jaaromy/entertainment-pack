@@ -9,19 +9,46 @@
   user-select: none;
 }
 
+:root {
+  --card-w: 72px;
+  --card-h: 100px;
+  --waste-offset: 18px;
+}
+
 /* ---- Centered board container ---- */
 .klondike-board {
   max-width: 620px;
   margin: 0 auto;
 }
 
+.klondike-board--large {
+  --card-w: 96px;
+  --card-h: 134px;
+  --waste-offset: 24px;
+  max-width: 800px;
+}
+
 /* ---- Header ---- */
 .klondike-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 14px;
+}
+
+.klondike-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.klondike-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .klondike-title {
@@ -105,8 +132,8 @@
    ========================================================= */
 
 .card {
-  width: 72px;
-  height: 100px;
+  width: var(--card-w);
+  height: var(--card-h);
   border-radius: 4px;
   border: 1px solid #888;
   overflow: hidden;
@@ -131,31 +158,23 @@
 
 /* ---- Face-down card ---- */
 .card--face-down {
-  background: #00007c;
   cursor: default;
-}
-
-.card--face-down .card-back-inner {
-  position: absolute;
-  inset: 5px;
-  border-radius: 3px;
-  border: 2px solid rgba(255, 255, 255, 0.9);
   background:
     repeating-linear-gradient(
       45deg,
-      rgba(255,255,255,0.55) 0px,
-      rgba(255,255,255,0.55) 1.5px,
+      rgba(255,255,255,0.25) 0px,
+      rgba(255,255,255,0.25) 1.5px,
       transparent 1.5px,
       transparent 8px
     ),
     repeating-linear-gradient(
       -45deg,
-      rgba(255,255,255,0.55) 0px,
-      rgba(255,255,255,0.55) 1.5px,
+      rgba(255,255,255,0.25) 0px,
+      rgba(255,255,255,0.25) 1.5px,
       transparent 1.5px,
       transparent 8px
     ),
-    #00007c;
+    #0793eb;
 }
 
 /* ---- Face-up card: sprite sheet provides the artwork ---- */
@@ -168,8 +187,8 @@
    ========================================================= */
 
 .pile-slot {
-  width: 72px;
-  height: 100px;
+  width: var(--card-w);
+  height: var(--card-h);
   border-radius: 4px;
   overflow: hidden;
   cursor: pointer;
@@ -186,8 +205,8 @@
 
 .stock-pile {
   position: relative;
-  width: 72px;
-  height: 100px;
+  width: var(--card-w);
+  height: var(--card-h);
   flex-shrink: 0;
 }
 
@@ -197,17 +216,21 @@
 
 .stock-count {
   position: absolute;
-  bottom: -18px;
+  bottom: 4px;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 0.7rem;
-  color: rgba(255,255,255,0.5);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 10;
 }
 
 .stock-recycle {
-  width: 72px;
-  height: 100px;
+  width: var(--card-w);
+  height: var(--card-h);
   border-radius: 4px;
   overflow: hidden;
   cursor: pointer;
@@ -219,23 +242,23 @@
 
 .waste-pile {
   position: relative;
-  width: 72px;
-  height: 100px;
+  width: var(--card-w);
+  height: var(--card-h);
   flex-shrink: 0;
 }
 
 .waste-pile--draw3 {
-  width: 108px;
+  width: calc(var(--card-w) + var(--waste-offset) * 2);
 }
 
 .waste-pile-inner {
   position: relative;
-  width: 72px;
-  height: 100px;
+  width: var(--card-w);
+  height: var(--card-h);
 }
 
 .waste-pile--draw3 .waste-pile-inner {
-  width: 108px;
+  width: calc(var(--card-w) + var(--waste-offset) * 2);
 }
 
 /* =========================================================
@@ -244,8 +267,8 @@
 
 .foundation-pile {
   position: relative;
-  width: 72px;
-  height: 100px;
+  width: var(--card-w);
+  height: var(--card-h);
   flex-shrink: 0;
 }
 
@@ -259,8 +282,8 @@
 
 .tableau-pile {
   position: relative;
-  width: 72px;
-  min-height: 100px;
+  width: var(--card-w);
+  min-height: var(--card-h);
   flex-shrink: 0;
 }
 

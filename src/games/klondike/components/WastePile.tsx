@@ -60,14 +60,14 @@ export default function WastePile({
   // Draw-3: show up to last 3 cards as a fan
   const visibleCount = Math.min(3, cards.length);
   const visibleCards = cards.slice(cards.length - visibleCount);
-  const offsets = [0, 18, 36];
+  const offsets = ['0px', 'var(--waste-offset)', 'calc(var(--waste-offset) * 2)'];
 
   return (
     <div className="waste-pile waste-pile--draw3">
       <div className="waste-pile-inner">
         {visibleCards.map((card, i) => {
           const isTop = i === visibleCards.length - 1;
-          const left = offsets[i] ?? 0;
+          const left = offsets[i] ?? '0px';
           return (
             <CardView
               key={card.id}
