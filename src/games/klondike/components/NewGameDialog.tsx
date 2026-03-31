@@ -4,11 +4,13 @@ import type { DrawMode, ScoringMode } from '../types';
 interface NewGameDialogProps {
   onConfirm: (seed: number, drawMode: DrawMode, scoringMode: ScoringMode) => void;
   onCancel: () => void;
+  defaultDrawMode?: DrawMode;
+  defaultScoringMode?: ScoringMode;
 }
 
-export default function NewGameDialog({ onConfirm, onCancel }: NewGameDialogProps) {
-  const [drawMode, setDrawMode] = useState<DrawMode>(1);
-  const [scoringMode, setScoringMode] = useState<ScoringMode>('standard');
+export default function NewGameDialog({ onConfirm, onCancel, defaultDrawMode, defaultScoringMode }: NewGameDialogProps) {
+  const [drawMode, setDrawMode] = useState<DrawMode>(defaultDrawMode ?? 1);
+  const [scoringMode, setScoringMode] = useState<ScoringMode>(defaultScoringMode ?? 'standard');
 
   const handleConfirm = () => {
     onConfirm(Date.now(), drawMode, scoringMode);

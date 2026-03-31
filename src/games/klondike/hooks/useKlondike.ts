@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Card, CardLocation, DrawMode, GameState, ScoringMode, Selection } from '../types';
 import {
   drawFromStock,
@@ -15,12 +15,11 @@ import {
   createGame,
   currentState,
   canUndo as gwCanUndo,
-  canRedo as gwCanRedo,
   pushState,
   undo as gwUndo,
-  redo as gwRedo,
 } from '../gameReducer';
 import { VEGAS_MAX_RECYCLES_DRAW1, VEGAS_MAX_RECYCLES_DRAW3 } from '../constants';
+import { loadSettings, saveSettings, loadGame, saveGame, clearGame, recordResult } from '../storage';
 import type { GameWithHistory } from '../gameReducer';
 
 interface DragSource {
@@ -31,7 +30,6 @@ interface DragSource {
 interface UseKlondikeReturn {
   state: GameState;
   canUndo: boolean;
-  canRedo: boolean;
   canRecycleStock: boolean;
   selection: Selection | null;
   dragSource: DragSource | null;
@@ -45,7 +43,6 @@ interface UseKlondikeReturn {
   onDragOver: (area: string, pile: number) => void;
   onDrop: (area: 'foundation' | 'tableau', pile: number) => void;
   doUndo: () => void;
-  doRedo: () => void;
   startNewGame: (seed: number, drawMode: DrawMode, scoringMode: ScoringMode) => void;
   canAutoComplete: boolean;
   doAutoComplete: () => void;
@@ -99,18 +96,29 @@ function checkCanAutoComplete(state: GameState): boolean {
 }
 
 export function useKlondike(): UseKlondikeReturn {
-  const [gwh, setGwh] = useState<GameWithHistory>(() =>
-    createGame(Date.now(), 1, 'standard')
-  );
+  const [gwh, setGwh] = useState<GameWithHistory>(() => {
+    const saved = loadGame();
+    if (saved?.status === 'playing') {
+      return { states: [saved], index: 0 };
+    }
+    const settings = loadSettings();
+    return createGame(Date.now(), settings?.drawMode ?? 1, settings?.scoringMode ?? 'standard');
+  });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{ area: string; pile: number } | null>(null);
 
   const state = currentState(gwh);
+  // Always-current ref so callbacks without state in deps can read latest state
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  // Guard against recording the same win twice (React StrictMode double-invoke)
+  const winRecordedRef = useRef(false);
 
   const commit = useCallback((newState: GameState | null) => {
     if (!newState) return false;
     setGwh(prev => pushState(prev, newState));
+    saveGame(newState);
     setSelection(null);
     return true;
   }, []);
@@ -301,15 +309,30 @@ export function useKlondike(): UseKlondikeReturn {
 
   const doUndo = useCallback(() => {
     setSelection(null);
-    setGwh(prev => gwUndo(prev));
+    setGwh(prev => {
+      const next = gwUndo(prev);
+      saveGame(currentState(next));
+      return next;
+    });
   }, []);
 
-  const doRedo = useCallback(() => {
-    setSelection(null);
-    setGwh(prev => gwRedo(prev));
-  }, []);
+  // Record win and clear persisted game when the game is completed
+  useEffect(() => {
+    if (state.status === 'won' && !winRecordedRef.current) {
+      winRecordedRef.current = true;
+      recordResult(state.drawMode, state.scoringMode, true, state.score);
+      clearGame();
+    }
+  }, [state.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startNewGame = useCallback((seed: number, drawMode: DrawMode, scoringMode: ScoringMode) => {
+    const prev = stateRef.current;
+    if (prev.status === 'playing' && prev.moves > 0) {
+      recordResult(prev.drawMode, prev.scoringMode, false, prev.score);
+    }
+    saveSettings({ drawMode, scoringMode });
+    clearGame();
+    winRecordedRef.current = false;
     setSelection(null);
     setDragSource(null);
     setDragOverTarget(null);
@@ -327,7 +350,6 @@ export function useKlondike(): UseKlondikeReturn {
   return {
     state,
     canUndo: gwCanUndo(gwh),
-    canRedo: gwCanRedo(gwh),
     canRecycleStock: checkCanRecycleStock(state),
     selection,
     dragSource,
@@ -341,7 +363,6 @@ export function useKlondike(): UseKlondikeReturn {
     onDragOver,
     onDrop,
     doUndo,
-    doRedo,
     startNewGame,
     canAutoComplete: checkCanAutoComplete(state),
     doAutoComplete,

@@ -12,7 +12,6 @@ export default function KlondikeGame() {
   const {
     state,
     canUndo,
-    canRedo,
     canRecycleStock,
     selection,
     dragSource,
@@ -26,7 +25,6 @@ export default function KlondikeGame() {
     onDragOver,
     onDrop,
     doUndo,
-    doRedo,
     startNewGame,
     canAutoComplete,
     doAutoComplete,
@@ -77,9 +75,6 @@ export default function KlondikeGame() {
         </span>
         <button className="klondike-btn" onClick={doUndo} disabled={!canUndo}>
           Undo
-        </button>
-        <button className="klondike-btn" onClick={doRedo} disabled={!canRedo}>
-          Redo
         </button>
         {canAutoComplete && (
           <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
@@ -169,6 +164,8 @@ export default function KlondikeGame() {
       {/* New game dialog */}
       {showDialog && (
         <NewGameDialog
+          defaultDrawMode={state.drawMode}
+          defaultScoringMode={state.scoringMode}
           onConfirm={handleConfirmNewGame}
           onCancel={() => setShowDialog(false)}
         />
