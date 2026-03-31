@@ -1,0 +1,434 @@
+/* =========================================================
+   Klondike Solitaire Styles
+   ========================================================= */
+
+.klondike-game {
+  min-height: 100vh;
+  padding: 12px 16px 24px;
+  background: #1a5c2a;
+  user-select: none;
+}
+
+/* ---- Header ---- */
+.klondike-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.klondike-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  margin-right: 8px;
+}
+
+.klondike-score {
+  font-size: 0.95rem;
+  color: #d4f7d4;
+  background: rgba(0,0,0,0.25);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.klondike-btn {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.klondike-btn:hover {
+  background: rgba(255,255,255,0.28);
+}
+
+.klondike-btn:active {
+  transform: scale(0.97);
+}
+
+.klondike-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.klondike-btn--autocomplete {
+  background: rgba(255, 214, 0, 0.2);
+  border-color: #ffd600;
+  color: #ffd600;
+}
+
+.klondike-btn--autocomplete:hover {
+  background: rgba(255, 214, 0, 0.35);
+}
+
+/* ---- Top row (stock / waste / foundations) ---- */
+.klondike-top-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.klondike-top-spacer {
+  flex: 1;
+  min-width: 16px;
+}
+
+.klondike-foundations {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---- Tableau row ---- */
+.klondike-tableau {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+/* =========================================================
+   Card base
+   ========================================================= */
+
+.card {
+  width: 72px;
+  height: 100px;
+  border-radius: 7px;
+  border: 1px solid rgba(0,0,0,0.3);
+  position: absolute;
+  cursor: pointer;
+  transition: box-shadow 0.1s, opacity 0.1s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.35);
+}
+
+.card:hover {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+}
+
+.card--selected {
+  box-shadow: 0 0 0 3px #ffd600, 0 4px 12px rgba(255,214,0,0.5) !important;
+  z-index: 100 !important;
+}
+
+.card--drag-source {
+  opacity: 0.4;
+}
+
+/* ---- Face-down card ---- */
+.card--face-down {
+  background: #1a237e;
+  cursor: default;
+}
+
+.card--face-down .card-back-inner {
+  position: absolute;
+  inset: 5px;
+  border-radius: 4px;
+  border: 2px solid rgba(255,255,255,0.18);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,0.06) 0px,
+    rgba(255,255,255,0.06) 4px,
+    transparent 4px,
+    transparent 10px
+  );
+}
+
+/* ---- Face-up card ---- */
+.card--face-up {
+  background: #fff;
+}
+
+.card--red {
+  color: #c62828;
+}
+
+.card--black {
+  color: #111;
+}
+
+.card-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.card-corner--top {
+  top: 4px;
+  left: 5px;
+  font-size: 0.72rem;
+}
+
+.card-corner--bottom {
+  bottom: 4px;
+  right: 5px;
+  font-size: 0.72rem;
+  transform: rotate(180deg);
+}
+
+.card-corner-rank {
+  font-size: 0.82rem;
+}
+
+.card-corner-suit {
+  font-size: 0.72rem;
+}
+
+.card-center-suit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  pointer-events: none;
+}
+
+/* =========================================================
+   Pile slot (empty pile placeholder)
+   ========================================================= */
+
+.pile-slot {
+  width: 72px;
+  height: 100px;
+  border-radius: 7px;
+  border: 2px dashed rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.pile-slot--drag-over {
+  border-color: #ffd600;
+  color: #ffd600;
+  box-shadow: 0 0 0 2px rgba(255,214,0,0.4);
+}
+
+/* =========================================================
+   Stock pile
+   ========================================================= */
+
+.stock-pile {
+  position: relative;
+  width: 72px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.stock-pile .card {
+  position: relative;
+}
+
+.stock-count {
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.stock-recycle {
+  width: 72px;
+  height: 100px;
+  border-radius: 7px;
+  border: 2px dashed rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.stock-recycle:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,0.7);
+}
+
+/* =========================================================
+   Waste pile
+   ========================================================= */
+
+.waste-pile {
+  position: relative;
+  width: 72px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.waste-pile--draw3 {
+  width: 108px;
+}
+
+.waste-pile-inner {
+  position: relative;
+  width: 72px;
+  height: 100px;
+}
+
+.waste-pile--draw3 .waste-pile-inner {
+  width: 108px;
+}
+
+/* =========================================================
+   Foundation pile
+   ========================================================= */
+
+.foundation-pile {
+  position: relative;
+  width: 72px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.foundation-pile .card {
+  position: relative;
+}
+
+/* =========================================================
+   Tableau pile
+   ========================================================= */
+
+.tableau-pile {
+  position: relative;
+  width: 72px;
+  min-height: 100px;
+  flex-shrink: 0;
+}
+
+.tableau-drop-zone {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* =========================================================
+   Win overlay
+   ========================================================= */
+
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.win-modal {
+  background: #1a5c2a;
+  border: 2px solid #ffd600;
+  border-radius: 16px;
+  padding: 40px 56px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255,214,0,0.3);
+}
+
+.win-modal h2 {
+  font-size: 2.2rem;
+  margin-bottom: 12px;
+  color: #ffd600;
+}
+
+.win-modal p {
+  font-size: 1.1rem;
+  margin-bottom: 24px;
+  color: #d4f7d4;
+}
+
+.win-modal .klondike-btn {
+  font-size: 1rem;
+  padding: 10px 28px;
+}
+
+/* =========================================================
+   New Game Dialog
+   ========================================================= */
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+}
+
+.dialog-box {
+  background: #1e4a2a;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 14px;
+  padding: 28px 36px;
+  min-width: 300px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.dialog-box h3 {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.dialog-field {
+  margin-bottom: 16px;
+}
+
+.dialog-field label {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 6px;
+}
+
+.dialog-radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+.dialog-radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #fff;
+  margin-bottom: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+  justify-content: flex-end;
+}
+
+.dialog-actions .klondike-btn--primary {
+  background: rgba(255,214,0,0.25);
+  border-color: #ffd600;
+  color: #ffd600;
+  font-weight: 600;
+}
+
+.dialog-actions .klondike-btn--primary:hover {
+  background: rgba(255,214,0,0.4);
+}
