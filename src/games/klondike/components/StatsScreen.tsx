@@ -22,11 +22,16 @@ function winRate(s: ModeStats): string {
   return `${Math.round((s.gamesWon / s.gamesPlayed) * 100)}%`;
 }
 
-export default function StatsScreen() {
+interface StatsScreenProps {
+  onBack: () => void;
+}
+
+export default function StatsScreen({ onBack }: StatsScreenProps) {
   const all = loadStats();
 
   return (
     <div className="stats-screen">
+      <button className="menu-back-btn" onClick={onBack}>← Game</button>
       <h2 className="stats-title">Statistics</h2>
       <div className="stats-grid">
         {MODES.map(({ drawMode, scoringMode, label }) => {

@@ -110,6 +110,7 @@ export function createInitialState(
   seed: number,
   drawMode: DrawMode,
   scoringMode: ScoringMode,
+  initialScore?: number,
 ): GameState {
   const deck = createShuffledDeck(seed);
 
@@ -130,7 +131,7 @@ export function createInitialState(
     waste: [],
     foundations: [[], [], [], []],
     tableau,
-    score: scoringMode === 'vegas' ? VEGAS_INITIAL_BET : 0,
+    score: initialScore ?? (scoringMode === 'vegas' ? VEGAS_INITIAL_BET : 0),
     moves: 0,
     drawMode,
     scoringMode,

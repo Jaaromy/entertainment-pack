@@ -12,9 +12,14 @@ function makeCard(rank: number, suit: string, faceUp: boolean): Card {
   };
 }
 
-export default function CardGallery() {
+interface CardGalleryProps {
+  onBack: () => void;
+}
+
+export default function CardGallery({ onBack }: CardGalleryProps) {
   return (
     <div style={{ padding: '24px 32px', userSelect: 'none' }}>
+      <button className="menu-back-btn" onClick={onBack}>← Game</button>
       <h1 style={{ color: '#fff', fontFamily: 'sans-serif', marginBottom: 8, fontSize: '1.4rem' }}>
         Card Gallery
       </h1>

@@ -1,15 +1,20 @@
 import { useState } from 'react';
-import type { DrawMode, ScoringMode, CardLocation } from '../types';
+import type { DrawMode, ScoringMode, CardLocation } from '../types'; // DrawMode/ScoringMode used in useState initialisers
 import { useKlondike } from '../hooks/useKlondike';
 import { loadSettings, saveSettings } from '../storage';
 import StockPile from './StockPile';
 import WastePile from './WastePile';
 import FoundationPile from './FoundationPile';
 import TableauPile from './TableauPile';
-import NewGameDialog from './NewGameDialog';
+import OptionsDialog from './OptionsDialog';
+import MenuBar from './MenuBar';
 import '../klondike.css';
 
-export default function KlondikeGame() {
+interface KlondikeGameProps {
+  onNavigate: (view: 'stats' | 'gallery') => void;
+}
+
+export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   const {
     state,
     canUndo,
@@ -32,23 +37,29 @@ export default function KlondikeGame() {
     doAutoComplete,
   } = useKlondike();
 
-  const [showDialog, setShowDialog] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const [cardSize, setCardSize] = useState<'normal' | 'large'>(
-    () => loadSettings()?.cardSize ?? 'normal'
+    () => loadSettings()?.cardSize ?? 'large'
   );
 
-  const toggleCardSize = () => {
-    const next = cardSize === 'normal' ? 'large' : 'normal';
-    setCardSize(next);
-    const current = loadSettings();
-    saveSettings({ drawMode: state.drawMode, scoringMode: state.scoringMode, ...current, cardSize: next });
+  // Pending settings — used on next Deal, independent of current game state
+  const [pendingDrawMode, setPendingDrawMode] = useState<DrawMode>(
+    () => loadSettings()?.drawMode ?? state.drawMode
+  );
+  const [pendingScoringMode, setPendingScoringMode] = useState<ScoringMode>(
+    () => loadSettings()?.scoringMode ?? state.scoringMode
+  );
+
+  const handleDeal = () => {
+    startNewGame(Date.now(), pendingDrawMode, pendingScoringMode);
   };
 
-  const handleNewGame = () => setShowDialog(true);
-
-  const handleConfirmNewGame = (seed: number, drawMode: DrawMode, scoringMode: ScoringMode) => {
-    startNewGame(seed, drawMode, scoringMode);
-    setShowDialog(false);
+  const handleConfirmOptions = (drawMode: DrawMode, scoringMode: ScoringMode, size: 'normal' | 'large') => {
+    setPendingDrawMode(drawMode);
+    setPendingScoringMode(scoringMode);
+    setCardSize(size);
+    saveSettings({ drawMode, scoringMode, cardSize: size });
+    setShowOptions(false);
   };
 
   const scoreDisplay =
@@ -80,120 +91,109 @@ export default function KlondikeGame() {
   return (
     <div className="klondike-game">
       <div className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}>
-      {/* Header */}
-      <div className="klondike-header">
-        <div className="klondike-header-left">
-          <span className="klondike-title">Solitaire</span>
-          <span className="klondike-score">
-            Score: {scoreDisplay} &nbsp;|&nbsp; Moves: {state.moves}
-          </span>
-          <button className="klondike-btn" onClick={doUndo} disabled={!canUndo}>
-            Undo
-          </button>
-          {canAutoComplete && (
-            <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
-              Auto-Complete
-            </button>
-          )}
-          {forceWin && (
-            <button className="klondike-btn" onClick={forceWin} style={{ opacity: 0.5 }}>
-              Force Win
-            </button>
-          )}
-        </div>
-        <div className="klondike-header-right">
-          <button className="klondike-btn" onClick={toggleCardSize}>
-            {cardSize === 'normal' ? 'Large' : 'Normal'}
-          </button>
-          <button className="klondike-btn" onClick={handleNewGame}>
-            New Game
-          </button>
-        </div>
-      </div>
 
-      {/* Top row */}
-      <div className="klondike-top-row">
-        <StockPile cards={state.stock} canRecycle={canRecycleStock} onStockClick={onStockClick} />
-
-        <WastePile
-          cards={state.waste}
-          drawMode={state.drawMode}
-          selection={selection}
-          dragSource={dragSource}
-          onCardClick={onCardClick}
-          onCardDoubleClick={onCardDoubleClick}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
+        <MenuBar
+          canUndo={canUndo}
+          score={scoreDisplay}
+          onDeal={handleDeal}
+          onUndo={doUndo}
+          onOptions={() => setShowOptions(true)}
+          onStats={() => onNavigate('stats')}
+          onGallery={() => onNavigate('gallery')}
         />
 
-        <div className="klondike-top-spacer" />
+        {/* Header */}
+        <div className="klondike-header">
+          <div className="klondike-header-left">
+            <span className="klondike-title">Solitaire</span>
+            {canAutoComplete && (
+              <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
+                Auto-Complete
+              </button>
+            )}
+            {forceWin && (
+              <button className="klondike-btn" onClick={forceWin} style={{ opacity: 0.5 }}>
+                Force Win
+              </button>
+            )}
+          </div>
+        </div>
 
-        <div className="klondike-foundations">
-          {state.foundations.map((pile, i) => (
-            <FoundationPile
+        {/* Top row */}
+        <div className="klondike-top-row" style={{ position: 'relative' }}>
+          <StockPile cards={state.stock} canRecycle={canRecycleStock} onStockClick={onStockClick} />
+
+          {state.status === 'won'
+            ? <span className="win-inline">You Win</span>
+            : <WastePile
+                cards={state.waste}
+                drawMode={state.drawMode}
+                selection={selection}
+                dragSource={dragSource}
+                onCardClick={onCardClick}
+                onCardDoubleClick={onCardDoubleClick}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+              />
+          }
+
+          <div className="klondike-top-spacer" />
+
+          <div className="klondike-foundations">
+            {state.foundations.map((pile, i) => (
+              <FoundationPile
+                key={i}
+                index={i}
+                cards={pile}
+                selection={selection}
+                dragSource={dragSource}
+                isDragOver={isFoundationDragOver(i)}
+                onCardClick={handleFoundationCardClick}
+                onCardDoubleClick={handleFoundationDoubleClick}
+                onEmptyPileClick={handleFoundationEmptyClick}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                onDragOver={makeFoundationDragOverHandler(i)}
+                onDrop={onDrop}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Tableau */}
+        <div className="klondike-tableau">
+          {state.tableau.map((pile, i) => (
+            <TableauPile
               key={i}
-              index={i}
+              pileIndex={i}
               cards={pile}
               selection={selection}
               dragSource={dragSource}
-              isDragOver={isFoundationDragOver(i)}
-              onCardClick={handleFoundationCardClick}
-              onCardDoubleClick={handleFoundationDoubleClick}
-              onEmptyPileClick={handleFoundationEmptyClick}
+              isDragOver={isTableauDragOver(i)}
+              onCardClick={onCardClick}
+              onCardDoubleClick={onCardDoubleClick}
+              onEmptyPileClick={onEmptyPileClick}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
-              onDragOver={makeFoundationDragOverHandler(i)}
+              onDragOver={makeTableauDragOverHandler(i)}
               onDrop={onDrop}
             />
           ))}
         </div>
-      </div>
 
-      {/* Tableau */}
-      <div className="klondike-tableau">
-        {state.tableau.map((pile, i) => (
-          <TableauPile
-            key={i}
-            pileIndex={i}
-            cards={pile}
-            selection={selection}
-            dragSource={dragSource}
-            isDragOver={isTableauDragOver(i)}
-            onCardClick={onCardClick}
-            onCardDoubleClick={onCardDoubleClick}
-            onEmptyPileClick={onEmptyPileClick}
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-            onDragOver={makeTableauDragOverHandler(i)}
-            onDrop={onDrop}
-          />
-        ))}
-      </div>
       </div>{/* end .klondike-board */}
 
-      {/* Win overlay */}
-      {state.status === 'won' && (
-        <div className="win-overlay">
-          <div className="win-modal">
-            <h2>You Won! 🎉</h2>
-            <p>Final Score: {scoreDisplay}</p>
-            <p style={{ marginBottom: 24, fontSize: '0.95rem', opacity: 0.8 }}>
-              Moves: {state.moves}
-            </p>
-            <button className="klondike-btn klondike-btn--primary" onClick={handleNewGame}>
-              New Game
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* New game dialog */}
-      {showDialog && (
-        <NewGameDialog
-          defaultDrawMode={state.drawMode}
-          defaultScoringMode={state.scoringMode}
-          onConfirm={handleConfirmNewGame}
-          onCancel={() => setShowDialog(false)}
+      {showOptions && (
+        <OptionsDialog
+          drawMode={pendingDrawMode}
+          scoringMode={pendingScoringMode}
+          cardSize={cardSize}
+          onConfirm={handleConfirmOptions}
+          onResetWinnings={() => {
+            startNewGame(Date.now(), pendingDrawMode, pendingScoringMode, 0);
+            setShowOptions(false);
+          }}
+          onClose={() => setShowOptions(false)}
         />
       )}
     </div>

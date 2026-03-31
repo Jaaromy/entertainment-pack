@@ -22,8 +22,9 @@ export function createGame(
   seed: number,
   drawMode: DrawMode,
   scoringMode: ScoringMode,
+  initialScore?: number,
 ): GameWithHistory {
-  const initial = createInitialState(seed, drawMode, scoringMode);
+  const initial = createInitialState(seed, drawMode, scoringMode, initialScore);
   return { states: [initial], index: 0 };
 }
 

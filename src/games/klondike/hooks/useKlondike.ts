@@ -18,8 +18,8 @@ import {
   pushState,
   undo as gwUndo,
 } from '../gameReducer';
-import { VEGAS_MAX_RECYCLES_DRAW1, VEGAS_MAX_RECYCLES_DRAW3 } from '../constants';
-import { loadSettings, saveSettings, loadGame, saveGame, clearGame, recordResult } from '../storage';
+import { VEGAS_MAX_RECYCLES_DRAW1, VEGAS_MAX_RECYCLES_DRAW3, VEGAS_INITIAL_BET } from '../constants';
+import { loadSettings, saveSettings, loadGame, saveGame, clearGame, recordResult, loadVegasPot, saveVegasPot } from '../storage';
 import type { GameWithHistory } from '../gameReducer';
 
 interface DragSource {
@@ -44,7 +44,7 @@ interface UseKlondikeReturn {
   onDragOver: (area: string, pile: number) => void;
   onDrop: (area: 'foundation' | 'tableau', pile: number) => void;
   doUndo: () => void;
-  startNewGame: (seed: number, drawMode: DrawMode, scoringMode: ScoringMode) => void;
+  startNewGame: (seed: number, drawMode: DrawMode, scoringMode: ScoringMode, overridePot?: number) => void;
   canAutoComplete: boolean;
   doAutoComplete: () => void;
 }
@@ -103,7 +103,12 @@ export function useKlondike(): UseKlondikeReturn {
       return { states: [saved], index: 0 };
     }
     const settings = loadSettings();
-    return createGame(Date.now(), settings?.drawMode ?? 1, settings?.scoringMode ?? 'standard');
+    const drawMode = settings?.drawMode ?? 3;
+    const scoringMode = settings?.scoringMode ?? 'vegas';
+    const initialScore = scoringMode === 'vegas'
+      ? loadVegasPot() + VEGAS_INITIAL_BET
+      : undefined;
+    return createGame(Date.now(), drawMode, scoringMode, initialScore);
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
@@ -120,6 +125,7 @@ export function useKlondike(): UseKlondikeReturn {
     if (!newState) return false;
     setGwh(prev => pushState(prev, newState));
     saveGame(newState);
+    if (newState.scoringMode === 'vegas') saveVegasPot(newState.score);
     setSelection(null);
     return true;
   }, []);
@@ -326,10 +332,19 @@ export function useKlondike(): UseKlondikeReturn {
     }
   }, [state.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const startNewGame = useCallback((seed: number, drawMode: DrawMode, scoringMode: ScoringMode) => {
+  const startNewGame = useCallback((seed: number, drawMode: DrawMode, scoringMode: ScoringMode, overridePot?: number) => {
     const prev = stateRef.current;
     if (prev.status === 'playing' && prev.moves > 0) {
       recordResult(prev.drawMode, prev.scoringMode, false, prev.score);
+    }
+    let initialScore: number | undefined;
+    if (scoringMode === 'vegas') {
+      // Use overridePot if provided (e.g. Reset Winnings), otherwise carry
+      // prev.score forward if already in Vegas (always current, even with no
+      // moves), or fall back to storage when switching from Standard.
+      const pot = overridePot ?? (prev.scoringMode === 'vegas' ? prev.score : loadVegasPot());
+      saveVegasPot(pot);
+      initialScore = pot + VEGAS_INITIAL_BET;
     }
     saveSettings({ drawMode, scoringMode });
     clearGame();
@@ -337,7 +352,7 @@ export function useKlondike(): UseKlondikeReturn {
     setSelection(null);
     setDragSource(null);
     setDragOverTarget(null);
-    setGwh(createGame(seed, drawMode, scoringMode));
+    setGwh(createGame(seed, drawMode, scoringMode, initialScore));
   }, []);
 
   const forceWin = import.meta.env.DEV

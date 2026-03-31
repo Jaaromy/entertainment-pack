@@ -11,37 +11,9 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#007800' }}>
-      <div style={{
-        display: 'flex', gap: 6, padding: '8px 12px',
-        background: 'rgba(0,0,0,0.25)',
-      }}>
-        <button onClick={() => setView('game')} style={tabStyle(view === 'game')}>
-          Game
-        </button>
-        <button onClick={() => setView('stats')} style={tabStyle(view === 'stats')}>
-          Stats
-        </button>
-        <button onClick={() => setView('gallery')} style={tabStyle(view === 'gallery')}>
-          Card Gallery
-        </button>
-      </div>
-      {view === 'game' && <KlondikeGame />}
-      {view === 'stats' && <StatsScreen />}
-      {view === 'gallery' && <CardGallery />}
+      {view === 'game' && <KlondikeGame onNavigate={setView} />}
+      {view === 'stats' && <StatsScreen onBack={() => setView('game')} />}
+      {view === 'gallery' && <CardGallery onBack={() => setView('game')} />}
     </div>
   )
-}
-
-function tabStyle(active: boolean): React.CSSProperties {
-  return {
-    background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.2)',
-    color: active ? '#007800' : '#fff',
-    border: '1px solid rgba(255,255,255,0.5)',
-    padding: '4px 12px',
-    borderRadius: 6,
-    fontSize: '0.8rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-    fontFamily: 'sans-serif',
-  }
 }

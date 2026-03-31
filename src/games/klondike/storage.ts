@@ -1,8 +1,11 @@
 import type { DrawMode, ScoringMode, GameState } from './types';
 
-const KEY_SETTINGS = 'ep:settings';
-const KEY_STATS    = 'ep:stats';
-const KEY_GAME     = 'ep:game';
+const KEY_SETTINGS  = 'ep:settings';
+const KEY_STATS     = 'ep:stats';
+const KEY_GAME      = 'ep:game';
+const KEY_VEGAS_POT = 'ep:vegas-pot';
+
+export const VEGAS_INITIAL_POT = 0;
 
 export interface StoredSettings {
   drawMode: DrawMode;
@@ -56,16 +59,23 @@ export function saveSettings(s: StoredSettings): void {
 }
 
 // ---------------------------------------------------------------------------
+// Vegas pot
+// ---------------------------------------------------------------------------
+
+export function loadVegasPot(): number {
+  return getItem<number>(KEY_VEGAS_POT) ?? VEGAS_INITIAL_POT;
+}
+
+export function saveVegasPot(balance: number): void {
+  setItem(KEY_VEGAS_POT, balance);
+}
+
+// ---------------------------------------------------------------------------
 // Stats
 // ---------------------------------------------------------------------------
 
 export function loadStats(): Record<string, ModeStats> {
   return getItem<Record<string, ModeStats>>(KEY_STATS) ?? {};
-}
-
-export function getModeStat(drawMode: DrawMode, scoringMode: ScoringMode): ModeStats {
-  const all = loadStats();
-  return all[modeKey(drawMode, scoringMode)] ?? emptyModeStats();
 }
 
 export function recordResult(
