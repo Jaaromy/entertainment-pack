@@ -1,5 +1,5 @@
 import type { Card } from '../types';
-import { SUIT_SYMBOL, RANK_LABEL, RED_SUITS } from '../constants';
+import { cardFaceStyle } from '../spriteSheet';
 
 interface CardViewProps {
   card: Card;
@@ -24,45 +24,26 @@ export default function CardView({
   onDragStart,
   onDragEnd,
 }: CardViewProps) {
-  const isRed = RED_SUITS.includes(card.suit);
-  const symbol = SUIT_SYMBOL[card.suit];
-  const rankLabel = RANK_LABEL[card.rank];
-
   const classes = [
     'card',
     card.faceUp ? 'card--face-up' : 'card--face-down',
-    card.faceUp ? (isRed ? 'card--red' : 'card--black') : '',
-    isSelected ? 'card--selected' : '',
-    isDragSource ? 'card--drag-source' : '',
+    isSelected    ? 'card--selected'    : '',
+    isDragSource  ? 'card--drag-source' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
+  const faceStyle = card.faceUp ? cardFaceStyle(card.suit, card.rank) : undefined;
+
   return (
     <div
       className={classes}
-      style={style}
+      style={faceStyle ? { ...faceStyle, ...style } : style}
       draggable={draggable && card.faceUp}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-    >
-      {card.faceUp ? (
-        <>
-          <div className="card-corner card-corner--top">
-            <span className="card-corner-rank">{rankLabel}</span>
-            <span className="card-corner-suit">{symbol}</span>
-          </div>
-          <div className="card-center-suit">{symbol}</div>
-          <div className="card-corner card-corner--bottom">
-            <span className="card-corner-rank">{rankLabel}</span>
-            <span className="card-corner-suit">{symbol}</span>
-          </div>
-        </>
-      ) : (
-        <div className="card-back-inner" />
-      )}
-    </div>
+    />
   );
 }

@@ -1,4 +1,5 @@
 import type { Card, CardLocation, Selection } from '../types';
+import { emptySlotStyle } from '../spriteSheet';
 import CardView from './CardView';
 
 interface TableauPileProps {
@@ -80,12 +81,11 @@ export default function TableauPile({
     return (
       <div
         className={`tableau-pile pile-slot${isDragOver ? ' pile-slot--drag-over' : ''}`}
+        style={emptySlotStyle}
         onClick={() => onEmptyPileClick('tableau', pileIndex)}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-      >
-        {''}
-      </div>
+      />
     );
   }
 

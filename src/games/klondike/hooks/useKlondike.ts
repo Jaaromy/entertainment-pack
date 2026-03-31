@@ -20,6 +20,7 @@ import {
   undo as gwUndo,
   redo as gwRedo,
 } from '../gameReducer';
+import { VEGAS_MAX_RECYCLES_DRAW1, VEGAS_MAX_RECYCLES_DRAW3 } from '../constants';
 import type { GameWithHistory } from '../gameReducer';
 
 interface DragSource {
@@ -31,6 +32,7 @@ interface UseKlondikeReturn {
   state: GameState;
   canUndo: boolean;
   canRedo: boolean;
+  canRecycleStock: boolean;
   selection: Selection | null;
   dragSource: DragSource | null;
   dragOverTarget: { area: string; pile: number } | null;
@@ -72,6 +74,16 @@ function locationsEqual(a: CardLocation, b: CardLocation): boolean {
     return a.pile === b.pile && a.cardIndex === b.cardIndex;
   }
   return false;
+}
+
+function checkCanRecycleStock(state: GameState): boolean {
+  if (state.stock.length > 0) return false;
+  if (state.waste.length === 0) return false;
+  if (state.scoringMode === 'vegas') {
+    const max = state.drawMode === 1 ? VEGAS_MAX_RECYCLES_DRAW1 : VEGAS_MAX_RECYCLES_DRAW3;
+    if (state.stockRecycles >= max) return false;
+  }
+  return true;
 }
 
 function checkCanAutoComplete(state: GameState): boolean {
@@ -316,6 +328,7 @@ export function useKlondike(): UseKlondikeReturn {
     state,
     canUndo: gwCanUndo(gwh),
     canRedo: gwCanRedo(gwh),
+    canRecycleStock: checkCanRecycleStock(state),
     selection,
     dragSource,
     dragOverTarget,

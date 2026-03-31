@@ -1,22 +1,23 @@
 import type { Card } from '../types';
+import { shuffleSlotStyle, noShuffleSlotStyle } from '../spriteSheet';
 import CardView from './CardView';
 
 interface StockPileProps {
   cards: Card[];
+  canRecycle: boolean;
   onStockClick: () => void;
 }
 
-export default function StockPile({ cards, onStockClick }: StockPileProps) {
+export default function StockPile({ cards, canRecycle, onStockClick }: StockPileProps) {
   if (cards.length === 0) {
     return (
       <div className="stock-pile">
         <div
           className="stock-recycle"
+          style={canRecycle ? shuffleSlotStyle : noShuffleSlotStyle}
           onClick={onStockClick}
-          title="Recycle waste pile"
-        >
-          ↺
-        </div>
+          title={canRecycle ? 'Recycle waste pile' : 'No more recycles'}
+        />
       </div>
     );
   }

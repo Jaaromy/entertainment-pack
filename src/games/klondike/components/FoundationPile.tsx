@@ -1,7 +1,6 @@
 import type { Card, CardLocation, Selection } from '../types';
+import { emptySlotStyle } from '../spriteSheet';
 import CardView from './CardView';
-
-const SUIT_SYMBOLS = ['♠', '♥', '♦', '♣'];
 
 interface FoundationPileProps {
   index: number;
@@ -50,12 +49,11 @@ export default function FoundationPile({
     return (
       <div
         className={`foundation-pile pile-slot${isDragOver ? ' pile-slot--drag-over' : ''}`}
+        style={emptySlotStyle}
         onClick={() => onEmptyPileClick('foundation', index)}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-      >
-        {SUIT_SYMBOLS[index]}
-      </div>
+      />
     );
   }
 

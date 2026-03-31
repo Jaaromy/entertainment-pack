@@ -13,6 +13,7 @@ export default function KlondikeGame() {
     state,
     canUndo,
     canRedo,
+    canRecycleStock,
     selection,
     dragSource,
     dragOverTarget,
@@ -92,7 +93,7 @@ export default function KlondikeGame() {
 
       {/* Top row */}
       <div className="klondike-top-row">
-        <StockPile cards={state.stock} onStockClick={onStockClick} />
+        <StockPile cards={state.stock} canRecycle={canRecycleStock} onStockClick={onStockClick} />
 
         <WastePile
           cards={state.waste}
