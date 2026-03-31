@@ -39,35 +39,23 @@ export function canUndo(gwh: GameWithHistory): boolean {
   return gwh.index > 0;
 }
 
-export function canRedo(gwh: GameWithHistory): boolean {
-  return gwh.index < gwh.states.length - 1;
-}
-
 // ---------------------------------------------------------------------------
 // Write (all return a new GameWithHistory)
 // ---------------------------------------------------------------------------
 
 /**
- * Commit a new state.
- * If we are not at the head of the history (i.e. the player undid some moves
- * and then made a new move), all "future" states are discarded.
+ * Commit a new state, keeping only the previous state for a single undo level.
  */
 export function pushState(
   gwh: GameWithHistory,
   newState: GameState,
 ): GameWithHistory {
-  const trimmed = gwh.states.slice(0, gwh.index + 1);
-  return { states: [...trimmed, newState], index: gwh.index + 1 };
+  return { states: [currentState(gwh), newState], index: 1 };
 }
 
 export function undo(gwh: GameWithHistory): GameWithHistory {
   if (!canUndo(gwh)) return gwh;
   return { ...gwh, index: gwh.index - 1 };
-}
-
-export function redo(gwh: GameWithHistory): GameWithHistory {
-  if (!canRedo(gwh)) return gwh;
-  return { ...gwh, index: gwh.index + 1 };
 }
 
 /**

@@ -3,10 +3,8 @@ import {
   createGame,
   currentState,
   canUndo,
-  canRedo,
   pushState,
   undo,
-  redo,
   newGame,
 } from '../gameReducer';
 
@@ -41,13 +39,9 @@ describe('currentState', () => {
   });
 });
 
-describe('canUndo / canRedo', () => {
+describe('canUndo', () => {
   it('canUndo is false on fresh game', () => {
     expect(canUndo(createGame(0, 1, 'standard'))).toBe(false);
-  });
-
-  it('canRedo is false on fresh game', () => {
-    expect(canRedo(createGame(0, 1, 'standard'))).toBe(false);
   });
 
   it('canUndo becomes true after pushState', () => {
@@ -55,14 +49,6 @@ describe('canUndo / canRedo', () => {
     const s = currentState(gwh);
     const gwh2 = pushState(gwh, { ...s, moves: 1 });
     expect(canUndo(gwh2)).toBe(true);
-  });
-
-  it('canRedo becomes true after undo', () => {
-    const gwh = createGame(0, 1, 'standard');
-    const s = currentState(gwh);
-    const gwh2 = pushState(gwh, { ...s, moves: 1 });
-    const gwh3 = undo(gwh2);
-    expect(canRedo(gwh3)).toBe(true);
   });
 });
 
@@ -76,21 +62,28 @@ describe('pushState', () => {
     expect(currentState(gwh2).moves).toBe(1);
   });
 
-  it('truncates future states when pushing after undo', () => {
+  it('always keeps only two states (previous + new)', () => {
     const gwh0 = createGame(0, 1, 'standard');
     const s = currentState(gwh0);
 
     const gwh1 = pushState(gwh0, { ...s, moves: 1 });
     const gwh2 = pushState(gwh1, { ...s, moves: 2 });
-    expect(gwh2.states).toHaveLength(3);
+    expect(gwh2.states).toHaveLength(2);
+    expect(currentState(gwh2).moves).toBe(2);
+    expect(gwh2.states[0]!.moves).toBe(1);
+  });
 
-    // Undo twice then push a new state
-    const gwh3 = undo(undo(gwh2)); // back to index 0
-    const gwh4 = pushState(gwh3, { ...s, moves: 99 });
+  it('pushing after undo uses the undone state as previous', () => {
+    const gwh0 = createGame(0, 1, 'standard');
+    const s = currentState(gwh0);
+    const gwh1 = pushState(gwh0, { ...s, moves: 1 });
+    const gwh2 = undo(gwh1);
+    const gwh3 = pushState(gwh2, { ...s, moves: 99 });
 
-    expect(gwh4.states).toHaveLength(2); // [original, new]
-    expect(gwh4.index).toBe(1);
-    expect(currentState(gwh4).moves).toBe(99);
+    expect(gwh3.states).toHaveLength(2);
+    expect(gwh3.index).toBe(1);
+    expect(currentState(gwh3).moves).toBe(99);
+    expect(gwh3.states[0]!.moves).toBe(0);
   });
 
   it('does not mutate the original GameWithHistory', () => {
@@ -118,36 +111,21 @@ describe('undo', () => {
     expect(result.index).toBe(0);
   });
 
-  it('supports multiple undos', () => {
+  it('second undo is a no-op (only one level supported)', () => {
     let gwh = createGame(0, 1, 'standard');
     const s = currentState(gwh);
     gwh = pushState(gwh, { ...s, moves: 1 });
     gwh = pushState(gwh, { ...s, moves: 2 });
-    gwh = pushState(gwh, { ...s, moves: 3 });
-    expect(gwh.index).toBe(3);
 
-    gwh = undo(undo(undo(gwh)));
-    expect(gwh.index).toBe(0);
-    expect(currentState(gwh).moves).toBe(0);
+    const afterOneUndo = undo(gwh);
+    expect(currentState(afterOneUndo).moves).toBe(1);
+
+    const afterTwoUndos = undo(afterOneUndo);
+    expect(afterTwoUndos.index).toBe(0);
+    expect(currentState(afterTwoUndos).moves).toBe(1);
   });
 });
 
-describe('redo', () => {
-  it('increments index after undo', () => {
-    const gwh0 = createGame(0, 1, 'standard');
-    const s = currentState(gwh0);
-    const gwh1 = pushState(gwh0, { ...s, moves: 1 });
-    const gwh2 = undo(gwh1);
-    const gwh3 = redo(gwh2);
-    expect(gwh3.index).toBe(1);
-    expect(currentState(gwh3).moves).toBe(1);
-  });
-
-  it('is a no-op at the head', () => {
-    const gwh = createGame(0, 1, 'standard');
-    expect(redo(gwh).index).toBe(0);
-  });
-});
 
 describe('newGame', () => {
   it('resets history with fresh state', () => {
