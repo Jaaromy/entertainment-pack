@@ -12,7 +12,6 @@ interface FoundationPileProps {
   onEmptyPileClick: (area: 'foundation', pile: number) => void;
   onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
   onDragEnd: () => void;
-  onDrop: (area: 'foundation', pile: number) => void;
 }
 
 function FoundationPile({
@@ -24,24 +23,19 @@ function FoundationPile({
   onEmptyPileClick,
   onDragStart,
   onDragEnd,
-  onDrop,
 }: FoundationPileProps) {
   const loc: CardLocation = { area: 'foundation', pile: index };
   const isDragSrc = dragSource?.loc.area === 'foundation' && dragSource.loc.pile === index;
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    onDrop('foundation', index);
-  };
 
   if (cards.length === 0) {
     return (
       <div
         className="foundation-pile pile-slot"
         style={emptySlotStyle}
+        data-drop-area="foundation"
+        data-drop-pile={index}
         onClick={() => onEmptyPileClick('foundation', index)}
         onDragOver={e => e.preventDefault()}
-        onDrop={handleDrop}
       />
     );
   }
@@ -52,8 +46,9 @@ function FoundationPile({
     <div
       className="foundation-pile"
       style={{ borderRadius: 7 }}
+      data-drop-area="foundation"
+      data-drop-pile={index}
       onDragOver={e => e.preventDefault()}
-      onDrop={handleDrop}
     >
       <CardView
         card={top}

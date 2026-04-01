@@ -12,7 +12,6 @@ interface TableauPileProps {
   onEmptyPileClick: (area: 'tableau', pile: number) => void;
   onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
   onDragEnd: () => void;
-  onDrop: (area: 'tableau', pile: number) => void;
 }
 
 function isCardDragSource(
@@ -36,7 +35,6 @@ function TableauPile({
   onEmptyPileClick,
   onDragStart,
   onDragEnd,
-  onDrop,
 }: TableauPileProps) {
   // Calculate heights
   let totalOffset = 0;
@@ -50,19 +48,15 @@ function TableauPile({
   }
   const containerHeight = cards.length === 0 ? 100 : totalOffset + 100;
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    onDrop('tableau', pileIndex);
-  };
-
   if (cards.length === 0) {
     return (
       <div
         className="tableau-pile pile-slot"
         style={emptySlotStyle}
+        data-drop-area="tableau"
+        data-drop-pile={pileIndex}
         onClick={() => onEmptyPileClick('tableau', pileIndex)}
         onDragOver={e => e.preventDefault()}
-        onDrop={handleDrop}
       />
     );
   }
@@ -71,8 +65,9 @@ function TableauPile({
     <div
       className="tableau-pile"
       style={{ height: containerHeight }}
+      data-drop-area="tableau"
+      data-drop-pile={pileIndex}
       onDragOver={e => e.preventDefault()}
-      onDrop={handleDrop}
     >
       {cards.map((card, i) => {
         const loc: CardLocation = { area: 'tableau', pile: pileIndex, cardIndex: i };
