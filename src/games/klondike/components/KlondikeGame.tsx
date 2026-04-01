@@ -76,6 +76,12 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
     onDragEnd();
   };
 
+  const handleBoardDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.card') || target.closest('button')) return;
+    doAutoComplete();
+  };
+
   const handleBoardDragOver = (e: React.DragEvent) => {
     const el = dragPreviewRef.current;
     if (!el || !dragSource) return;
@@ -85,7 +91,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   };
 
   return (
-    <div className="klondike-game">
+    <div className="klondike-game" onDoubleClick={handleBoardDoubleClick}>
       <div
         className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}
         onDragOver={handleBoardDragOver}

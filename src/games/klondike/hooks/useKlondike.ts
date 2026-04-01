@@ -110,7 +110,9 @@ export function useKlondike(): UseKlondikeReturn {
     const initialScore = scoringMode === 'vegas'
       ? loadVegasPot() + VEGAS_INITIAL_BET
       : undefined;
-    return createGame(Date.now(), drawMode, scoringMode, initialScore);
+    const newGwh = createGame(Date.now(), drawMode, scoringMode, initialScore);
+    saveGame(currentState(newGwh));
+    return newGwh;
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
@@ -348,11 +350,12 @@ export function useKlondike(): UseKlondikeReturn {
       initialScore = pot + VEGAS_INITIAL_BET;
     }
     saveSettings({ drawMode, scoringMode });
-    clearGame();
     winRecordedRef.current = false;
     setSelection(null);
     setDragSource(null);
-    setGwh(createGame(seed, drawMode, scoringMode, initialScore));
+    const newGwh = createGame(seed, drawMode, scoringMode, initialScore);
+    saveGame(currentState(newGwh));
+    setGwh(newGwh);
   }, []);
 
   const forceWin = import.meta.env.DEV

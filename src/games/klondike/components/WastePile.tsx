@@ -54,15 +54,8 @@ export default function WastePile({
     );
   }
 
-  // Draw-3: show only cards from the current draw batch
-  const visibleCount = Math.min(wasteBatchSize, cards.length);
-  if (visibleCount === 0) {
-    return (
-      <div className="waste-pile waste-pile--draw3">
-        <div className="pile-slot" style={{ cursor: 'default' }} />
-      </div>
-    );
-  }
+  // Draw-3: show cards from the current batch, but always at least 1 if waste is non-empty
+  const visibleCount = Math.max(1, Math.min(wasteBatchSize, cards.length));
   const visibleCards = cards.slice(cards.length - visibleCount);
   const offsets = ['0px', 'var(--waste-offset)', 'calc(var(--waste-offset) * 2)'];
 
