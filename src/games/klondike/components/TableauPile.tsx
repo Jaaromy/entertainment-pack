@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Card, CardLocation } from '../types';
 import { emptySlotStyle } from '../spriteSheet';
 import CardView from './CardView';
@@ -26,7 +27,7 @@ function isCardDragSource(
   return cardIndex >= loc.cardIndex;
 }
 
-export default function TableauPile({
+function TableauPile({
   pileIndex,
   cards,
   dragSource,
@@ -99,3 +100,5 @@ export default function TableauPile({
     </div>
   );
 }
+
+export default memo(TableauPile);

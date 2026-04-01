@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Card, CardLocation } from '../types';
 import { emptySlotStyle } from '../spriteSheet';
 import CardView from './CardView';
@@ -14,7 +15,7 @@ interface FoundationPileProps {
   onDrop: (area: 'foundation', pile: number) => void;
 }
 
-export default function FoundationPile({
+function FoundationPile({
   index,
   cards,
   dragSource,
@@ -67,3 +68,5 @@ export default function FoundationPile({
     </div>
   );
 }
+
+export default memo(FoundationPile);

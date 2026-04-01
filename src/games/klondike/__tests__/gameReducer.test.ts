@@ -154,4 +154,25 @@ describe('newGame', () => {
     const s = currentState(fresh);
     expect(s.seed).toBe(999);
   });
+
+  it('resets score to Vegas initial bet in vegas mode', () => {
+    const gwh = createGame(1, 1, 'vegas');
+    const fresh = newGame(gwh, 999);
+    expect(currentState(fresh).score).toBe(-52);
+  });
+
+  it('resets score to 0 in standard mode', () => {
+    const gwh = createGame(1, 1, 'standard');
+    const fresh = newGame(gwh, 999);
+    expect(currentState(fresh).score).toBe(0);
+  });
+
+  it('resets history to a single state', () => {
+    let gwh = createGame(1, 1, 'standard');
+    const s = currentState(gwh);
+    gwh = pushState(gwh, { ...s, moves: 3 });
+    const fresh = newGame(gwh, 999);
+    expect(fresh.states).toHaveLength(1);
+    expect(fresh.index).toBe(0);
+  });
 });

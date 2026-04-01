@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Card } from '../types';
 import { cardFaceStyle } from '../spriteSheet';
 
@@ -12,7 +13,7 @@ interface CardViewProps {
   onDragEnd?: (e: React.DragEvent) => void;
 }
 
-export default function CardView({
+function CardView({
   card,
   isDragSource,
   draggable = false,
@@ -52,3 +53,5 @@ export default function CardView({
     />
   );
 }
+
+export default memo(CardView);

@@ -284,6 +284,46 @@ describe('drawFromStock', () => {
     });
     drawFromStock(state)!.waste.forEach((c) => expect(c.faceUp).toBe(true));
   });
+
+  it('remaining stock cards keep their relative order after Draw-1', () => {
+    // stock bottom→top: 1, 2, 3, 4, 5  (5 is top)
+    const stockCards = [1, 2, 3, 4, 5].map((r) =>
+      card(r as Card['rank'], 'spades', false),
+    );
+    const state = makeState({ stock: stockCards, drawMode: 1 });
+    const next = drawFromStock(state)!;
+    // 5 was drawn; remaining bottom→top should still be 1, 2, 3, 4
+    expect(next.stock.map((c) => c.rank)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('remaining stock cards keep their relative order after Draw-3', () => {
+    // stock bottom→top: 1, 2, 3, 4, 5  (3 drawn from top: 5, 4, 3)
+    const stockCards = [1, 2, 3, 4, 5].map((r) =>
+      card(r as Card['rank'], 'spades', false),
+    );
+    const state = makeState({ stock: stockCards, drawMode: 3 });
+    const next = drawFromStock(state)!;
+    // Remaining bottom→top should be 1, 2
+    expect(next.stock.map((c) => c.rank)).toEqual([1, 2]);
+  });
+
+  it('pre-existing waste cards stay in place when new cards are drawn', () => {
+    // waste already has [A♥, 2♥] (2♥ on top); draw 1 more from stock
+    const existingWaste = [card(1, 'hearts'), card(2, 'hearts')];
+    const state = makeState({
+      stock: [card(5, 'clubs', false)],
+      waste: existingWaste,
+      drawMode: 1,
+    });
+    const next = drawFromStock(state)!;
+    // waste should be [A♥, 2♥, 5♣] — existing cards unchanged at indices 0 and 1
+    expect(next.waste).toHaveLength(3);
+    expect(next.waste[0]!.rank).toBe(1);
+    expect(next.waste[0]!.suit).toBe('hearts');
+    expect(next.waste[1]!.rank).toBe(2);
+    expect(next.waste[1]!.suit).toBe('hearts');
+    expect(next.waste[2]!.rank).toBe(5);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -452,6 +492,23 @@ describe('moveWasteToFoundation', () => {
     const state = makeState({ waste: [card(1, 'hearts')] });
     expect(moveWasteToFoundation(state, 0)!.moves).toBe(1);
   });
+
+  it('remaining waste cards keep their relative order', () => {
+    // waste bottom→top: A♥, 2♣, 3♦  (3♦ is top and gets moved)
+    const state = makeState({
+      waste: [card(1, 'hearts'), card(2, 'clubs'), card(3, 'diamonds')],
+      foundations: [
+        [card(1, 'diamonds'), card(2, 'diamonds')],
+        [], [], [],
+      ],
+    });
+    const next = moveWasteToFoundation(state, 0)!;
+    expect(next.waste).toHaveLength(2);
+    expect(next.waste[0]!.rank).toBe(1);
+    expect(next.waste[0]!.suit).toBe('hearts');
+    expect(next.waste[1]!.rank).toBe(2);
+    expect(next.waste[1]!.suit).toBe('clubs');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -502,6 +559,19 @@ describe('moveWasteToTableau', () => {
 
   it('returns null when waste is empty', () => {
     expect(moveWasteToTableau(makeState(), 0)).toBeNull();
+  });
+
+  it('remaining waste cards keep their relative order', () => {
+    // waste bottom→top: A♥, 2♣, K♠  (K♠ is top and gets moved to empty pile)
+    const state = makeState({
+      waste: [card(1, 'hearts'), card(2, 'clubs'), card(13, 'spades')],
+    });
+    const next = moveWasteToTableau(state, 0)!;
+    expect(next.waste).toHaveLength(2);
+    expect(next.waste[0]!.rank).toBe(1);
+    expect(next.waste[0]!.suit).toBe('hearts');
+    expect(next.waste[1]!.rank).toBe(2);
+    expect(next.waste[1]!.suit).toBe('clubs');
   });
 });
 
@@ -883,6 +953,181 @@ describe('autoMoveToFoundation', () => {
 });
 
 // ---------------------------------------------------------------------------
+// createInitialState – initialScore override
+// ---------------------------------------------------------------------------
+
+describe('createInitialState – initialScore override', () => {
+  it('uses provided initialScore instead of default', () => {
+    const s = createInitialState(1, 1, 'standard', 999);
+    expect(s.score).toBe(999);
+  });
+
+  it('uses provided initialScore in vegas mode too', () => {
+    const s = createInitialState(1, 1, 'vegas', -104);
+    expect(s.score).toBe(-104);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// moveTableauToFoundation – Vegas scoring
+// ---------------------------------------------------------------------------
+
+describe('moveTableauToFoundation – Vegas scoring', () => {
+  it('awards +5 in vegas mode', () => {
+    const state = makeState({
+      tableau: [[card(1, 'clubs')], [], [], [], [], [], []],
+      score: -52,
+      scoringMode: 'vegas',
+    });
+    expect(moveTableauToFoundation(state, 0, 0)!.score).toBe(-47);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Win detection via moveWasteToFoundation and moveTableauToFoundation
+// ---------------------------------------------------------------------------
+
+describe('win detection', () => {
+  /** Build a state with all 52 cards on foundations except the given card in waste/tableau */
+  function almostWonState(lastCard: Card, area: 'waste' | 'tableau'): GameState {
+    const allSuits: Card['suit'][] = ['spades', 'hearts', 'diamonds', 'clubs'];
+    const fullFoundations: GameState['foundations'] = allSuits.map((suit) =>
+      Array.from({ length: 13 }, (_, i) =>
+        card((i + 1) as Card['rank'], suit),
+      ),
+    ) as GameState['foundations'];
+
+    // Remove the last card from the correct foundation
+    const suitIdx = allSuits.indexOf(lastCard.suit);
+    fullFoundations[suitIdx] = fullFoundations[suitIdx]!.slice(0, lastCard.rank - 1);
+
+    return makeState({
+      foundations: fullFoundations,
+      waste: area === 'waste' ? [lastCard] : [],
+      tableau:
+        area === 'tableau'
+          ? [[lastCard], [], [], [], [], [], []]
+          : [[], [], [], [], [], [], []],
+    });
+  }
+
+  it('moveWasteToFoundation triggers win when last card placed', () => {
+    const lastCard = card(13, 'spades');
+    const state = almostWonState(lastCard, 'waste');
+    const next = moveWasteToFoundation(state, 0)!;
+    expect(next).not.toBeNull();
+    expect(next.status).toBe('won');
+  });
+
+  it('moveTableauToFoundation triggers win when last card placed', () => {
+    const lastCard = card(13, 'spades');
+    const state = almostWonState(lastCard, 'tableau');
+    const next = moveTableauToFoundation(state, 0, 0)!;
+    expect(next).not.toBeNull();
+    expect(next.status).toBe('won');
+  });
+
+  it('status remains playing when not all 52 cards are on foundations', () => {
+    const state = makeState({ waste: [card(1, 'hearts')] });
+    const next = moveWasteToFoundation(state, 0)!;
+    expect(next.status).toBe('playing');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// moveTableauToTableau – out-of-bounds cardIndex
+// ---------------------------------------------------------------------------
+
+describe('moveTableauToTableau – boundary cases', () => {
+  it('returns null when cardIndex is negative', () => {
+    const state = makeState({
+      tableau: [
+        [card(7, 'hearts')],
+        [card(8, 'spades')],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    });
+    expect(moveTableauToTableau(state, 0, -1, 1)).toBeNull();
+  });
+
+  it('returns null when cardIndex equals pile length', () => {
+    const state = makeState({
+      tableau: [
+        [card(7, 'hearts')],
+        [card(8, 'spades')],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    });
+    expect(moveTableauToTableau(state, 0, 1, 1)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// wasteBatchSize tracking
+// ---------------------------------------------------------------------------
+
+describe('wasteBatchSize tracking', () => {
+  it('drawFromStock sets wasteBatchSize to number of drawn cards', () => {
+    const state = makeState({
+      stock: [card(1, 's', false), card(2, 'h', false), card(3, 'c', false)],
+      drawMode: 3,
+    });
+    expect(drawFromStock(state)!.wasteBatchSize).toBe(3);
+  });
+
+  it('drawFromStock sets wasteBatchSize to actual count when fewer than drawMode remain', () => {
+    const state = makeState({
+      stock: [card(1, 's', false), card(2, 'h', false)],
+      drawMode: 3,
+    });
+    expect(drawFromStock(state)!.wasteBatchSize).toBe(2);
+  });
+
+  it('moveWasteToFoundation decrements wasteBatchSize', () => {
+    const state = makeState({
+      waste: [card(1, 'hearts')],
+      wasteBatchSize: 3,
+    });
+    expect(moveWasteToFoundation(state, 0)!.wasteBatchSize).toBe(2);
+  });
+
+  it('moveWasteToFoundation does not go below 0', () => {
+    const state = makeState({
+      waste: [card(1, 'hearts')],
+      wasteBatchSize: 0,
+    });
+    expect(moveWasteToFoundation(state, 0)!.wasteBatchSize).toBe(0);
+  });
+
+  it('moveWasteToTableau decrements wasteBatchSize', () => {
+    const state = makeState({
+      waste: [card(13, 'spades')],
+      wasteBatchSize: 2,
+    });
+    expect(moveWasteToTableau(state, 0)!.wasteBatchSize).toBe(1);
+  });
+
+  it('recycleWaste resets wasteBatchSize to 0', () => {
+    const state = makeState({
+      stock: [],
+      waste: [card(1, 'hearts')],
+      wasteBatchSize: 3,
+      drawMode: 1,
+      scoringMode: 'standard',
+    });
+    expect(recycleWaste(state)!.wasteBatchSize).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Card conservation invariant
 // After every move there must be exactly 52 unique cards across all areas.
 // ---------------------------------------------------------------------------
@@ -1041,6 +1286,30 @@ describe('card conservation – 52 unique cards preserved after every move', () 
               break;
             }
           }
+        }
+      }
+    }
+  });
+
+  it('flipTableauCard preserves 52 unique cards', () => {
+    // Find a tableau pile with a face-down top card.
+    for (let p = 0; p < TABLEAU_SIZE; p++) {
+      const pile = base.tableau[p]!;
+      if (pile.length > 1) {
+        // There is at least one face-down card; flip the buried one after
+        // exposing it via a manual state tweak.
+        const tweaked = {
+          ...base,
+          tableau: base.tableau.map((tp, i) =>
+            i === p
+              ? [...tp.slice(0, -1).map((c) => ({ ...c, faceUp: false })), tp[tp.length - 1]!]
+              : tp,
+          ) as GameState['tableau'],
+        };
+        const next = flipTableauCard(tweaked, p);
+        if (next) {
+          assertCardInvariant(next);
+          break;
         }
       }
     }

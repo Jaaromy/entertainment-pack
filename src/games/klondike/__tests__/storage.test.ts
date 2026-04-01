@@ -7,6 +7,9 @@ import {
   loadGame,
   saveGame,
   clearGame,
+  loadVegasPot,
+  saveVegasPot,
+  VEGAS_INITIAL_POT,
 } from '../storage';
 import type { StoredSettings, ModeStats } from '../storage';
 import type { GameState } from '../types';
@@ -179,6 +182,40 @@ describe('clearGame', () => {
     saveGame(gameStub);
     clearGame();
     expect(loadGame()).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Vegas pot
+// ---------------------------------------------------------------------------
+
+describe('loadVegasPot', () => {
+  it('returns VEGAS_INITIAL_POT (0) when key is absent', () => {
+    expect(loadVegasPot()).toBe(VEGAS_INITIAL_POT);
+    expect(loadVegasPot()).toBe(0);
+  });
+
+  it('returns the stored value when present', () => {
+    mock.setItem('ep:vegas-pot', JSON.stringify(250));
+    expect(loadVegasPot()).toBe(250);
+  });
+});
+
+describe('saveVegasPot / loadVegasPot round-trip', () => {
+  it('persists and restores the pot balance', () => {
+    saveVegasPot(500);
+    expect(loadVegasPot()).toBe(500);
+  });
+
+  it('overwrites previous value', () => {
+    saveVegasPot(100);
+    saveVegasPot(200);
+    expect(loadVegasPot()).toBe(200);
+  });
+
+  it('persists negative balance', () => {
+    saveVegasPot(-52);
+    expect(loadVegasPot()).toBe(-52);
   });
 });
 

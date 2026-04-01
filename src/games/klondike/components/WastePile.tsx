@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Card, CardLocation, DrawMode } from '../types';
 import CardView from './CardView';
 
@@ -14,7 +15,7 @@ interface WastePileProps {
 
 const WASTE_LOC: CardLocation = { area: 'waste' };
 
-export default function WastePile({
+function WastePile({
   cards,
   drawMode,
   wasteBatchSize,
@@ -83,3 +84,5 @@ export default function WastePile({
     </div>
   );
 }
+
+export default memo(WastePile);

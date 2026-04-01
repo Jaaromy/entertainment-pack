@@ -118,9 +118,11 @@ export function useKlondike(): UseKlondikeReturn {
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
 
   const state = currentState(gwh);
-  // Always-current ref so callbacks without state in deps can read latest state
+  // Always-current refs so callbacks without these in deps can read latest values
   const stateRef = useRef(state);
   stateRef.current = state;
+  const dragSourceRef = useRef(dragSource);
+  dragSourceRef.current = dragSource;
   // Guard against recording the same win twice (React StrictMode double-invoke)
   const winRecordedRef = useRef(false);
 
@@ -272,12 +274,12 @@ export function useKlondike(): UseKlondikeReturn {
   }, [selection, tryMoveSelectionTo]);
 
   const onDragStart = useCallback((loc: CardLocation, e: React.DragEvent) => {
-    const cards = getCardsAtLocation(state, loc);
+    const cards = getCardsAtLocation(stateRef.current, loc);
     if (cards.length === 0) return;
 
     // Don't allow dragging face-down cards
     if (loc.area === 'tableau') {
-      const card = state.tableau[loc.pile]?.[loc.cardIndex];
+      const card = stateRef.current.tableau[loc.pile]?.[loc.cardIndex];
       if (!card?.faceUp) return;
     }
 
@@ -285,37 +287,39 @@ export function useKlondike(): UseKlondikeReturn {
     e.dataTransfer.effectAllowed = 'move';
     // Set some drag data so the drag works
     e.dataTransfer.setData('text/plain', loc.area);
-  }, [state]);
+  }, []);
 
   const onDragEnd = useCallback(() => {
     setDragSource(null);
   }, []);
 
   const onDrop = useCallback((area: 'foundation' | 'tableau', pile: number) => {
-    if (!dragSource) return;
+    const ds = dragSourceRef.current;
+    if (!ds) return;
 
-    const src = dragSource.loc;
+    const src = ds.loc;
+    const st = stateRef.current;
 
     if (area === 'foundation') {
       if (src.area === 'waste') {
-        commit(moveWasteToFoundation(state, pile));
+        commit(moveWasteToFoundation(st, pile));
       } else if (src.area === 'tableau') {
-        commit(moveTableauToFoundation(state, src.pile, pile));
+        commit(moveTableauToFoundation(st, src.pile, pile));
       } else if (src.area === 'foundation') {
         // no-op
       }
     } else if (area === 'tableau') {
       if (src.area === 'waste') {
-        commit(moveWasteToTableau(state, pile));
+        commit(moveWasteToTableau(st, pile));
       } else if (src.area === 'tableau') {
-        commit(moveTableauToTableau(state, src.pile, src.cardIndex, pile));
+        commit(moveTableauToTableau(st, src.pile, src.cardIndex, pile));
       } else if (src.area === 'foundation') {
-        commit(moveFoundationToTableau(state, src.pile, pile));
+        commit(moveFoundationToTableau(st, src.pile, pile));
       }
     }
 
     setDragSource(null);
-  }, [dragSource, state, commit]);
+  }, [commit]);
 
   const doUndo = useCallback(() => {
     setSelection(null);

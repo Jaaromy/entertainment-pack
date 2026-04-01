@@ -85,8 +85,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   const handleBoardDragOver = (e: React.DragEvent) => {
     const el = dragPreviewRef.current;
     if (!el || !dragSource) return;
-    el.style.left = `${e.clientX - dragSource.offsetX}px`;
-    el.style.top = `${e.clientY - dragSource.offsetY}px`;
+    el.style.transform = `translate(${e.clientX - dragSource.offsetX}px, ${e.clientY - dragSource.offsetY}px)`;
     el.style.display = 'block';
   };
 
@@ -188,8 +187,11 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
             style={{
               display: 'none',
               position: 'fixed',
+              left: 0,
+              top: 0,
               pointerEvents: 'none',
               zIndex: 9999,
+              willChange: 'transform',
             }}
           >
             {dragSource.cards.map((card, i) => (
