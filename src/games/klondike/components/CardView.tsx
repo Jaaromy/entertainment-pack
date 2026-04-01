@@ -3,7 +3,6 @@ import { cardFaceStyle } from '../spriteSheet';
 
 interface CardViewProps {
   card: Card;
-  isSelected: boolean;
   isDragSource: boolean;
   draggable?: boolean;
   style?: React.CSSProperties;
@@ -15,7 +14,6 @@ interface CardViewProps {
 
 export default function CardView({
   card,
-  isSelected,
   isDragSource,
   draggable = false,
   style,
@@ -27,7 +25,6 @@ export default function CardView({
   const classes = [
     'card',
     card.faceUp ? 'card--face-up' : 'card--face-down',
-    isSelected    ? 'card--selected'    : '',
     isDragSource  ? 'card--drag-source' : '',
   ]
     .filter(Boolean)

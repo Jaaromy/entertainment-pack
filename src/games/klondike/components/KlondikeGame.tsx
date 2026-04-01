@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { DrawMode, ScoringMode, CardLocation, Card } from '../types'; // DrawMode/ScoringMode used in useState initialisers
+import { useState, useRef } from 'react';
+import type { DrawMode, ScoringMode, CardLocation } from '../types'; // DrawMode/ScoringMode used in useState initialisers
 import { useKlondike } from '../hooks/useKlondike';
 import { loadSettings, saveSettings } from '../storage';
 import StockPile from './StockPile';
@@ -23,14 +23,12 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
     forceWin,
     selection,
     dragSource,
-    dragOverTarget,
     onStockClick,
     onCardClick,
     onCardDoubleClick,
     onEmptyPileClick,
     onDragStart,
     onDragEnd,
-    onDragOver,
     onDrop,
     doUndo,
     startNewGame,
@@ -39,7 +37,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   } = useKlondike();
 
   const [showOptions, setShowOptions] = useState(false);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragPreviewRef = useRef<HTMLDivElement>(null);
   const [cardSize, setCardSize] = useState<'normal' | 'large'>(
     () => loadSettings()?.cardSize ?? 'large'
   );
@@ -69,34 +67,21 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
       ? `$${state.score}`
       : `${state.score}`;
 
-  const isFoundationDragOver = (pile: number) =>
-    dragOverTarget?.area === 'foundation' && dragOverTarget.pile === pile;
-
-  const isTableauDragOver = (pile: number) =>
-    dragOverTarget?.area === 'tableau' && dragOverTarget.pile === pile;
-
-  const makeFoundationDragOverHandler = (pile: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    onDragOver('foundation', pile);
-  };
-
-  const makeTableauDragOverHandler = (pile: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    onDragOver('tableau', pile);
-  };
-
   const handleFoundationCardClick = (loc: CardLocation) => onCardClick(loc);
   const handleFoundationDoubleClick = (loc: CardLocation) => onCardDoubleClick(loc);
   const handleFoundationEmptyClick = (area: 'foundation', pile: number) =>
     onEmptyPileClick(area, pile);
 
   const handleDragEnd = () => {
-    setDragPos(null);
     onDragEnd();
   };
 
   const handleBoardDragOver = (e: React.DragEvent) => {
-    if (dragSource) setDragPos({ x: e.clientX, y: e.clientY });
+    const el = dragPreviewRef.current;
+    if (!el || !dragSource) return;
+    el.style.left = `${e.clientX - dragSource.offsetX}px`;
+    el.style.top = `${e.clientY - dragSource.offsetY}px`;
+    el.style.display = 'block';
   };
 
   return (
@@ -143,7 +128,6 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
                 cards={state.waste}
                 drawMode={state.drawMode}
                 wasteBatchSize={state.wasteBatchSize}
-                selection={selection}
                 dragSource={dragSource}
                 onCardClick={onCardClick}
                 onCardDoubleClick={onCardDoubleClick}
@@ -160,15 +144,12 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
                 key={i}
                 index={i}
                 cards={pile}
-                selection={selection}
                 dragSource={dragSource}
-                isDragOver={isFoundationDragOver(i)}
                 onCardClick={handleFoundationCardClick}
                 onCardDoubleClick={handleFoundationDoubleClick}
                 onEmptyPileClick={handleFoundationEmptyClick}
                 onDragStart={onDragStart}
                 onDragEnd={handleDragEnd}
-                onDragOver={makeFoundationDragOverHandler(i)}
                 onDrop={onDrop}
               />
             ))}
@@ -182,48 +163,39 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
               key={i}
               pileIndex={i}
               cards={pile}
-              selection={selection}
               dragSource={dragSource}
-              isDragOver={isTableauDragOver(i)}
               onCardClick={onCardClick}
               onCardDoubleClick={onCardDoubleClick}
               onEmptyPileClick={onEmptyPileClick}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
-              onDragOver={makeTableauDragOverHandler(i)}
               onDrop={onDrop}
             />
           ))}
         </div>
 
         {/* Drag preview — fully opaque floating card(s) that follow the cursor */}
-        {dragSource && dragPos && (() => {
-          const FACE_UP_OFFSET = 22;
-          const cards: Card[] = dragSource.cards;
-          const ox = dragSource.offsetX;
-          const oy = dragSource.offsetY;
-          return (
-            <div
-              style={{
-                position: 'fixed',
-                left: dragPos.x - ox,
-                top: dragPos.y - oy,
-                pointerEvents: 'none',
-                zIndex: 9999,
-              }}
-            >
-              {cards.map((card, i) => (
-                <CardView
-                  key={card.id}
-                  card={card}
-                  isSelected={false}
-                  isDragSource={false}
-                  style={{ position: 'absolute', top: i * FACE_UP_OFFSET, left: 0 }}
-                />
-              ))}
-            </div>
-          );
-        })()}
+        {/* Position is updated directly via ref to avoid re-renders on every mousemove */}
+        {dragSource && (
+          <div
+            ref={dragPreviewRef}
+            style={{
+              display: 'none',
+              position: 'fixed',
+              pointerEvents: 'none',
+              zIndex: 9999,
+            }}
+          >
+            {dragSource.cards.map((card, i) => (
+              <CardView
+                key={card.id}
+                card={card}
+                isDragSource={false}
+                style={{ position: 'absolute', top: i * 22, left: 0 }}
+              />
+            ))}
+          </div>
+        )}
 
       </div>{/* end .klondike-board */}
 

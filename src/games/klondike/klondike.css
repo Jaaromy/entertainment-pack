@@ -236,17 +236,8 @@
   overflow: hidden;
   position: absolute;
   cursor: pointer;
-  transition: box-shadow 0.1s, opacity 0.1s;
+  transition: opacity 0.1s;
   box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
-}
-
-.card:hover {
-  box-shadow: 0 4px 10px rgba(0,0,0,0.45);
-}
-
-.card--selected {
-  box-shadow: 0 0 0 3px #ffd600, 0 4px 12px rgba(255,214,0,0.5) !important;
-  z-index: 100 !important;
 }
 
 .card--drag-source {
@@ -292,9 +283,6 @@
   flex-shrink: 0;
 }
 
-.pile-slot--drag-over {
-  box-shadow: 0 0 0 3px #ffd600, 0 0 0 5px rgba(255,214,0,0.4);
-}
 
 /* =========================================================
    Stock pile

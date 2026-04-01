@@ -1,32 +1,17 @@
-import type { Card, CardLocation, Selection } from '../types';
+import type { Card, CardLocation } from '../types';
 import { emptySlotStyle } from '../spriteSheet';
 import CardView from './CardView';
 
 interface TableauPileProps {
   pileIndex: number;
   cards: Card[];
-  selection: Selection | null;
   dragSource: { loc: CardLocation; cards: Card[] } | null;
-  isDragOver: boolean;
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'tableau', pile: number) => void;
   onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
   onDragEnd: () => void;
-  onDragOver: (e: React.DragEvent) => void;
   onDrop: (area: 'tableau', pile: number) => void;
-}
-
-function isCardSelected(
-  cardIndex: number,
-  pileIndex: number,
-  selection: Selection | null
-): boolean {
-  if (!selection) return false;
-  const loc = selection.location;
-  if (loc.area !== 'tableau') return false;
-  if (loc.pile !== pileIndex) return false;
-  return cardIndex >= loc.cardIndex;
 }
 
 function isCardDragSource(
@@ -44,15 +29,12 @@ function isCardDragSource(
 export default function TableauPile({
   pileIndex,
   cards,
-  selection,
   dragSource,
-  isDragOver,
   onCardClick,
   onCardDoubleClick,
   onEmptyPileClick,
   onDragStart,
   onDragEnd,
-  onDragOver,
   onDrop,
 }: TableauPileProps) {
   // Calculate heights
@@ -67,11 +49,6 @@ export default function TableauPile({
   }
   const containerHeight = cards.length === 0 ? 100 : totalOffset + 100;
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    onDragOver(e);
-  };
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     onDrop('tableau', pileIndex);
@@ -80,10 +57,10 @@ export default function TableauPile({
   if (cards.length === 0) {
     return (
       <div
-        className={`tableau-pile pile-slot${isDragOver ? ' pile-slot--drag-over' : ''}`}
+        className="tableau-pile pile-slot"
         style={emptySlotStyle}
         onClick={() => onEmptyPileClick('tableau', pileIndex)}
-        onDragOver={handleDragOver}
+        onDragOver={e => e.preventDefault()}
         onDrop={handleDrop}
       />
     );
@@ -93,32 +70,17 @@ export default function TableauPile({
     <div
       className="tableau-pile"
       style={{ height: containerHeight }}
-      onDragOver={handleDragOver}
+      onDragOver={e => e.preventDefault()}
       onDrop={handleDrop}
     >
-      {/* Drop zone overlay at the bottom for empty-pile drops when dragging over a pile */}
-      {isDragOver && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 7,
-            border: '2px solid #ffd600',
-            zIndex: 200,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
       {cards.map((card, i) => {
         const loc: CardLocation = { area: 'tableau', pile: pileIndex, cardIndex: i };
-        const sel = isCardSelected(i, pileIndex, selection);
         const isDragSrc = isCardDragSource(i, pileIndex, dragSource);
 
         return (
           <CardView
             key={card.id}
             card={card}
-            isSelected={sel}
             isDragSource={isDragSrc}
             draggable={card.faceUp}
             style={{

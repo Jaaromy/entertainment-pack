@@ -28,7 +28,6 @@ export default function StockPile({ cards, canRecycle, onStockClick }: StockPile
     <div className="stock-pile" onClick={onStockClick} title={`${cards.length} cards remaining`}>
       <CardView
         card={topCard}
-        isSelected={false}
         isDragSource={false}
         draggable={false}
         style={{ position: 'relative' }}

@@ -5,7 +5,6 @@ interface WastePileProps {
   cards: Card[];
   drawMode: DrawMode;
   wasteBatchSize: number;
-  selection: { location: CardLocation; cards: Card[] } | null;
   dragSource: { loc: CardLocation; cards: Card[] } | null;
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
@@ -19,15 +18,12 @@ export default function WastePile({
   cards,
   drawMode,
   wasteBatchSize,
-  selection,
   dragSource,
   onCardClick,
   onCardDoubleClick,
   onDragStart,
   onDragEnd,
 }: WastePileProps) {
-  const isSelected =
-    selection?.location.area === 'waste';
   const isDragSrc = dragSource?.loc.area === 'waste';
 
   if (cards.length === 0) {
@@ -45,7 +41,6 @@ export default function WastePile({
         <div className="waste-pile-inner">
           <CardView
             card={top}
-            isSelected={isSelected}
             isDragSource={isDragSrc}
             draggable
             style={{ position: 'absolute', top: 0, left: 0 }}
@@ -81,7 +76,6 @@ export default function WastePile({
             <CardView
               key={card.id}
               card={card}
-              isSelected={isSelected && isTop}
               isDragSource={isDragSrc && isTop}
               draggable={isTop}
               style={{ position: 'absolute', top: 0, left }}

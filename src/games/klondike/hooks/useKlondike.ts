@@ -37,14 +37,12 @@ interface UseKlondikeReturn {
   forceWin: (() => void) | null;
   selection: Selection | null;
   dragSource: DragSource | null;
-  dragOverTarget: { area: string; pile: number } | null;
   onStockClick: () => void;
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'foundation' | 'tableau', pile: number) => void;
   onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
   onDragEnd: () => void;
-  onDragOver: (area: string, pile: number) => void;
   onDrop: (area: 'foundation' | 'tableau', pile: number) => void;
   doUndo: () => void;
   startNewGame: (seed: number, drawMode: DrawMode, scoringMode: ScoringMode, overridePot?: number) => void;
@@ -116,7 +114,6 @@ export function useKlondike(): UseKlondikeReturn {
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
-  const [dragOverTarget, setDragOverTarget] = useState<{ area: string; pile: number } | null>(null);
 
   const state = currentState(gwh);
   // Always-current ref so callbacks without state in deps can read latest state
@@ -290,15 +287,9 @@ export function useKlondike(): UseKlondikeReturn {
 
   const onDragEnd = useCallback(() => {
     setDragSource(null);
-    setDragOverTarget(null);
-  }, []);
-
-  const onDragOver = useCallback((area: string, pile: number) => {
-    setDragOverTarget({ area, pile });
   }, []);
 
   const onDrop = useCallback((area: 'foundation' | 'tableau', pile: number) => {
-    setDragOverTarget(null);
     if (!dragSource) return;
 
     const src = dragSource.loc;
@@ -361,7 +352,6 @@ export function useKlondike(): UseKlondikeReturn {
     winRecordedRef.current = false;
     setSelection(null);
     setDragSource(null);
-    setDragOverTarget(null);
     setGwh(createGame(seed, drawMode, scoringMode, initialScore));
   }, []);
 
@@ -383,14 +373,12 @@ export function useKlondike(): UseKlondikeReturn {
     canRecycleStock: checkCanRecycleStock(state),
     selection,
     dragSource,
-    dragOverTarget,
     onStockClick,
     onCardClick,
     onCardDoubleClick,
     onEmptyPileClick,
     onDragStart,
     onDragEnd,
-    onDragOver,
     onDrop,
     forceWin,
     doUndo,
