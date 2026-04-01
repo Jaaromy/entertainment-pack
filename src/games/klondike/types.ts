@@ -36,6 +36,7 @@ export interface GameState {
   scoringMode: ScoringMode;
   seed: number;
   stockRecycles: number;
+  wasteBatchSize: number;
   status: GameStatus;
 }
 

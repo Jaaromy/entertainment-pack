@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { DrawMode, ScoringMode, CardLocation } from '../types'; // DrawMode/ScoringMode used in useState initialisers
+import type { DrawMode, ScoringMode, CardLocation, Card } from '../types'; // DrawMode/ScoringMode used in useState initialisers
 import { useKlondike } from '../hooks/useKlondike';
 import { loadSettings, saveSettings } from '../storage';
 import StockPile from './StockPile';
@@ -8,6 +8,7 @@ import FoundationPile from './FoundationPile';
 import TableauPile from './TableauPile';
 import OptionsDialog from './OptionsDialog';
 import MenuBar from './MenuBar';
+import CardView from './CardView';
 import '../klondike.css';
 
 interface KlondikeGameProps {
@@ -38,6 +39,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   } = useKlondike();
 
   const [showOptions, setShowOptions] = useState(false);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [cardSize, setCardSize] = useState<'normal' | 'large'>(
     () => loadSettings()?.cardSize ?? 'large'
   );
@@ -88,9 +90,21 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   const handleFoundationEmptyClick = (area: 'foundation', pile: number) =>
     onEmptyPileClick(area, pile);
 
+  const handleDragEnd = () => {
+    setDragPos(null);
+    onDragEnd();
+  };
+
+  const handleBoardDragOver = (e: React.DragEvent) => {
+    if (dragSource) setDragPos({ x: e.clientX, y: e.clientY });
+  };
+
   return (
     <div className="klondike-game">
-      <div className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}>
+      <div
+        className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}
+        onDragOver={handleBoardDragOver}
+      >
 
         <MenuBar
           canUndo={canUndo}
@@ -128,12 +142,13 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
             : <WastePile
                 cards={state.waste}
                 drawMode={state.drawMode}
+                wasteBatchSize={state.wasteBatchSize}
                 selection={selection}
                 dragSource={dragSource}
                 onCardClick={onCardClick}
                 onCardDoubleClick={onCardDoubleClick}
                 onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
+                onDragEnd={handleDragEnd}
               />
           }
 
@@ -152,7 +167,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
                 onCardDoubleClick={handleFoundationDoubleClick}
                 onEmptyPileClick={handleFoundationEmptyClick}
                 onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
+                onDragEnd={handleDragEnd}
                 onDragOver={makeFoundationDragOverHandler(i)}
                 onDrop={onDrop}
               />
@@ -180,6 +195,35 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
             />
           ))}
         </div>
+
+        {/* Drag preview — fully opaque floating card(s) that follow the cursor */}
+        {dragSource && dragPos && (() => {
+          const FACE_UP_OFFSET = 22;
+          const cards: Card[] = dragSource.cards;
+          const ox = dragSource.offsetX;
+          const oy = dragSource.offsetY;
+          return (
+            <div
+              style={{
+                position: 'fixed',
+                left: dragPos.x - ox,
+                top: dragPos.y - oy,
+                pointerEvents: 'none',
+                zIndex: 9999,
+              }}
+            >
+              {cards.map((card, i) => (
+                <CardView
+                  key={card.id}
+                  card={card}
+                  isSelected={false}
+                  isDragSource={false}
+                  style={{ position: 'absolute', top: i * FACE_UP_OFFSET, left: 0 }}
+                />
+              ))}
+            </div>
+          );
+        })()}
 
       </div>{/* end .klondike-board */}
 

@@ -35,6 +35,14 @@ export default function CardView({
 
   const faceStyle = card.faceUp ? cardFaceStyle(card.suit, card.rank) : undefined;
 
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!onDragStart) return;
+    // Suppress the browser's semi-transparent ghost; KlondikeGame renders its own opaque preview.
+    const ghost = new Image();
+    e.dataTransfer.setDragImage(ghost, 0, 0);
+    onDragStart(e);
+  };
+
   return (
     <div
       className={classes}
@@ -42,7 +50,7 @@ export default function CardView({
       draggable={draggable && card.faceUp}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-      onDragStart={onDragStart}
+      onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
     />
   );

@@ -4,6 +4,7 @@ import CardView from './CardView';
 interface WastePileProps {
   cards: Card[];
   drawMode: DrawMode;
+  wasteBatchSize: number;
   selection: { location: CardLocation; cards: Card[] } | null;
   dragSource: { loc: CardLocation; cards: Card[] } | null;
   onCardClick: (loc: CardLocation) => void;
@@ -17,6 +18,7 @@ const WASTE_LOC: CardLocation = { area: 'waste' };
 export default function WastePile({
   cards,
   drawMode,
+  wasteBatchSize,
   selection,
   dragSource,
   onCardClick,
@@ -57,8 +59,15 @@ export default function WastePile({
     );
   }
 
-  // Draw-3: show up to last 3 cards as a fan
-  const visibleCount = Math.min(3, cards.length);
+  // Draw-3: show only cards from the current draw batch
+  const visibleCount = Math.min(wasteBatchSize, cards.length);
+  if (visibleCount === 0) {
+    return (
+      <div className="waste-pile waste-pile--draw3">
+        <div className="pile-slot" style={{ cursor: 'default' }} />
+      </div>
+    );
+  }
   const visibleCards = cards.slice(cards.length - visibleCount);
   const offsets = ['0px', 'var(--waste-offset)', 'calc(var(--waste-offset) * 2)'];
 

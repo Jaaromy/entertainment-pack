@@ -50,16 +50,28 @@ function cloneTableau(t: GameState['tableau']): GameState['tableau'] {
 }
 
 /**
- * If the new top card of a tableau pile is face-down, flip it.
- * Returns the mutated pile reference and the score bonus to award.
+ * Manually flip the top face-down card of a tableau pile.
+ * Returns null if the top card is already face-up or the pile is empty.
  */
-function maybeFlipTop(pile: Card[], scoringMode: ScoringMode): number {
-  const top = last(pile);
-  if (top && !top.faceUp) {
-    pile[pile.length - 1] = { ...top, faceUp: true };
-    return scoringMode === 'standard' ? SCORE_FLIP_TABLEAU : 0;
-  }
-  return 0;
+export function flipTableauCard(
+  state: GameState,
+  pileIndex: number,
+): GameState | null {
+  const pile = state.tableau[pileIndex];
+  if (!pile || pile.length === 0) return null;
+  const top = last(pile)!;
+  if (top.faceUp) return null;
+
+  const scoreDelta = state.scoringMode === 'standard' ? SCORE_FLIP_TABLEAU : 0;
+  const newTableau = cloneTableau(state.tableau);
+  newTableau[pileIndex][newTableau[pileIndex].length - 1] = { ...top, faceUp: true };
+
+  return {
+    ...state,
+    tableau: newTableau,
+    score: state.score + scoreDelta,
+    moves: state.moves + 1,
+  };
 }
 
 /** Check whether all 52 cards are on the foundations. */
@@ -137,6 +149,7 @@ export function createInitialState(
     scoringMode,
     seed,
     stockRecycles: 0,
+    wasteBatchSize: 0,
     status: 'playing',
   };
 }
@@ -165,6 +178,7 @@ export function drawFromStock(state: GameState): GameState | null {
     // drawn is already ordered so that drawn[drawn.length-1] was top of stock
     // → it becomes top of waste (playable).
     waste: [...state.waste, ...drawn],
+    wasteBatchSize: count,
     moves: state.moves + 1,
   };
 }
@@ -202,6 +216,7 @@ export function recycleWaste(state: GameState): GameState | null {
     ...state,
     stock: newStock,
     waste: [],
+    wasteBatchSize: 0,
     score: state.score + scoreDelta,
     stockRecycles: state.stockRecycles + 1,
     moves: state.moves + 1,
@@ -233,6 +248,7 @@ export function moveWasteToFoundation(
   return checkWin({
     ...state,
     waste: state.waste.slice(0, -1),
+    wasteBatchSize: Math.max(0, state.wasteBatchSize - 1),
     foundations: newFoundations,
     score: state.score + scoreDelta,
     moves: state.moves + 1,
@@ -258,6 +274,7 @@ export function moveWasteToTableau(
   return {
     ...state,
     waste: state.waste.slice(0, -1),
+    wasteBatchSize: Math.max(0, state.wasteBatchSize - 1),
     tableau: newTableau,
     score: state.score + scoreDelta,
     moves: state.moves + 1,
@@ -292,7 +309,6 @@ export function moveTableauToFoundation(
 
   const newTableau = cloneTableau(state.tableau);
   newTableau[fromPile].pop();
-  const flipBonus = maybeFlipTop(newTableau[fromPile], state.scoringMode);
 
   const newFoundations = cloneFoundations(state.foundations);
   newFoundations[foundationIndex].push({ ...card, faceUp: true });
@@ -301,7 +317,7 @@ export function moveTableauToFoundation(
     ...state,
     tableau: newTableau,
     foundations: newFoundations,
-    score: state.score + scoreDelta + flipBonus,
+    score: state.score + scoreDelta,
     moves: state.moves + 1,
   });
 }
@@ -332,13 +348,11 @@ export function moveTableauToTableau(
 
   const newTableau = cloneTableau(state.tableau);
   newTableau[fromPile].splice(cardIndex);
-  const flipBonus = maybeFlipTop(newTableau[fromPile], state.scoringMode);
   newTableau[toPile].push(...stack);
 
   return {
     ...state,
     tableau: newTableau,
-    score: state.score + flipBonus,
     moves: state.moves + 1,
   };
 }

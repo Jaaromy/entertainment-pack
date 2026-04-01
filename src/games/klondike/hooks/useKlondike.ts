@@ -8,6 +8,7 @@ import {
   moveTableauToFoundation,
   moveTableauToTableau,
   moveFoundationToTableau,
+  flipTableauCard,
   findFoundationTarget,
   autoMoveToFoundation,
 } from '../gameLogic';
@@ -25,6 +26,8 @@ import type { GameWithHistory } from '../gameReducer';
 interface DragSource {
   loc: CardLocation;
   cards: Card[];
+  offsetX: number;
+  offsetY: number;
 }
 
 interface UseKlondikeReturn {
@@ -100,7 +103,8 @@ export function useKlondike(): UseKlondikeReturn {
   const [gwh, setGwh] = useState<GameWithHistory>(() => {
     const saved = loadGame();
     if (saved?.status === 'playing') {
-      return { states: [saved], index: 0 };
+      const state = { ...saved, wasteBatchSize: saved.wasteBatchSize ?? 0 };
+      return { states: [state], index: 0 };
     }
     const settings = loadSettings();
     const drawMode = settings?.drawMode ?? 3;
@@ -176,10 +180,16 @@ export function useKlondike(): UseKlondikeReturn {
   }, [state, commit]);
 
   const onCardClick = useCallback((loc: CardLocation) => {
-    // Don't interact with face-down tableau cards
+    // Face-down tableau card: only the top card can be flipped by clicking
     if (loc.area === 'tableau') {
-      const card = state.tableau[loc.pile]?.[loc.cardIndex];
-      if (!card?.faceUp) return;
+      const pile = state.tableau[loc.pile];
+      const card = pile?.[loc.cardIndex];
+      if (!card?.faceUp) {
+        if (loc.cardIndex === (pile?.length ?? 0) - 1) {
+          commit(flipTableauCard(state, loc.pile));
+        }
+        return;
+      }
     }
 
     if (!selection) {
@@ -272,7 +282,7 @@ export function useKlondike(): UseKlondikeReturn {
       if (!card?.faceUp) return;
     }
 
-    setDragSource({ loc, cards });
+    setDragSource({ loc, cards, offsetX: e.nativeEvent.offsetX, offsetY: e.nativeEvent.offsetY });
     e.dataTransfer.effectAllowed = 'move';
     // Set some drag data so the drag works
     e.dataTransfer.setData('text/plain', loc.area);

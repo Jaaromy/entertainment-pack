@@ -11,6 +11,7 @@ import {
   moveTableauToFoundation,
   moveTableauToTableau,
   moveFoundationToTableau,
+  flipTableauCard,
   findFoundationTarget,
   autoMoveToFoundation,
 } from '../gameLogic';
@@ -59,6 +60,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     scoringMode: 'standard',
     seed: 0,
     stockRecycles: 0,
+    wasteBatchSize: 0,
     status: 'playing',
     ...overrides,
   };
@@ -518,7 +520,7 @@ describe('moveTableauToFoundation', () => {
     expect(next!.foundations[0]).toHaveLength(1);
   });
 
-  it('flips the newly exposed face-down card', () => {
+  it('does not auto-flip the newly exposed face-down card', () => {
     const state = makeState({
       tableau: [
         [card(2, 'clubs', false), card(1, 'clubs')],
@@ -531,10 +533,10 @@ describe('moveTableauToFoundation', () => {
       ],
     });
     const next = moveTableauToFoundation(state, 0, 0)!;
-    expect(next.tableau[0]![0]!.faceUp).toBe(true);
+    expect(next.tableau[0]![0]!.faceUp).toBe(false);
   });
 
-  it('awards +5 flip bonus when standard', () => {
+  it('awards +10 for tableau→foundation (no auto-flip bonus)', () => {
     const state = makeState({
       score: 0,
       tableau: [
@@ -547,8 +549,7 @@ describe('moveTableauToFoundation', () => {
         [],
       ],
     });
-    // +10 (tableau→foundation) +5 (flip) = 15
-    expect(moveTableauToFoundation(state, 0, 0)!.score).toBe(15);
+    expect(moveTableauToFoundation(state, 0, 0)!.score).toBe(10);
   });
 
   it('returns null when card is face-down', () => {
@@ -613,7 +614,7 @@ describe('moveTableauToTableau', () => {
     expect(next!.tableau[1]).toHaveLength(3);
   });
 
-  it('flips newly exposed face-down card after move', () => {
+  it('does not auto-flip newly exposed face-down card after move', () => {
     const state = makeState({
       tableau: [
         [card(2, 'spades', false), card(7, 'hearts')],
@@ -626,7 +627,7 @@ describe('moveTableauToTableau', () => {
       ],
     });
     const next = moveTableauToTableau(state, 0, 1, 1)!;
-    expect(next.tableau[0]![0]!.faceUp).toBe(true);
+    expect(next.tableau[0]![0]!.faceUp).toBe(false);
   });
 
   it('returns null for same-pile move', () => {
@@ -673,6 +674,61 @@ describe('moveTableauToTableau', () => {
     const next = moveTableauToTableau(state, 0, 0, 1);
     expect(next).not.toBeNull();
     expect(next!.tableau[1]).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// flipTableauCard
+// ---------------------------------------------------------------------------
+
+describe('flipTableauCard', () => {
+  it('flips the top face-down card', () => {
+    const state = makeState({
+      tableau: [[card(2, 'clubs', false)], [], [], [], [], [], []],
+    });
+    const next = flipTableauCard(state, 0)!;
+    expect(next).not.toBeNull();
+    expect(next.tableau[0]![0]!.faceUp).toBe(true);
+  });
+
+  it('returns null when top card is already face-up', () => {
+    const state = makeState({
+      tableau: [[card(2, 'clubs')], [], [], [], [], [], []],
+    });
+    expect(flipTableauCard(state, 0)).toBeNull();
+  });
+
+  it('returns null for empty pile', () => {
+    expect(flipTableauCard(makeState(), 0)).toBeNull();
+  });
+
+  it('awards +5 flip bonus in standard mode', () => {
+    const state = makeState({
+      score: 0,
+      tableau: [[card(2, 'clubs', false)], [], [], [], [], [], []],
+    });
+    expect(flipTableauCard(state, 0)!.score).toBe(5);
+  });
+
+  it('awards no flip bonus in vegas mode', () => {
+    const state = makeState({
+      score: 0,
+      scoringMode: 'vegas',
+      tableau: [[card(2, 'clubs', false)], [], [], [], [], [], []],
+    });
+    expect(flipTableauCard(state, 0)!.score).toBe(0);
+  });
+
+  it('only flips the top card, not buried face-down cards', () => {
+    const state = makeState({
+      tableau: [
+        [card(5, 'hearts', false), card(2, 'clubs', false)],
+        [], [], [], [], [], [],
+      ],
+    });
+    const next = flipTableauCard(state, 0)!;
+    expect(next.tableau[0]![1]!.faceUp).toBe(true);
+    expect(next.tableau[0]![0]!.faceUp).toBe(false);
   });
 });
 

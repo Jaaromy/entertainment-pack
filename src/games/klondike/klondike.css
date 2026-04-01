@@ -250,7 +250,7 @@
 }
 
 .card--drag-source {
-  opacity: 0.4;
+  opacity: 0;
 }
 
 /* ---- Face-down card ---- */
