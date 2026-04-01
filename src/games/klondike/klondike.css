@@ -7,12 +7,15 @@
   padding: 12px 16px 24px;
   background: #007800;
   user-select: none;
+  touch-action: manipulation;
 }
 
 :root {
-  --card-w: 72px;
-  --card-h: 100px;
-  --waste-offset: 18px;
+  --gap: 8px;
+  /* Card width shrinks on narrow screens so 7 columns always fit */
+  --card-w: min(72px, calc((100vw - 32px - var(--gap) * 6) / 7));
+  --card-h: calc(var(--card-w) * 100 / 72);
+  --waste-offset: calc(var(--card-w) * 0.25);
 }
 
 /* ---- Centered board container ---- */
@@ -22,9 +25,9 @@
 }
 
 .klondike-board--large {
-  --card-w: 96px;
-  --card-h: 134px;
-  --waste-offset: 24px;
+  --card-w: min(96px, calc((100vw - 32px - var(--gap) * 6) / 7));
+  --card-h: calc(var(--card-w) * 100 / 72);
+  --waste-offset: calc(var(--card-w) * 0.25);
   max-width: 800px;
 }
 
@@ -196,7 +199,7 @@
 .klondike-top-row {
   display: grid;
   grid-template-columns: repeat(7, var(--card-w));
-  gap: 8px;
+  gap: var(--gap);
   margin-bottom: 12px;
   align-items: start;
   position: relative;
@@ -213,14 +216,14 @@
 .klondike-foundations {
   grid-column: 4 / 8;
   display: flex;
-  gap: 8px;
+  gap: var(--gap);
 }
 
 /* ---- Tableau row ---- */
 .klondike-tableau {
   display: grid;
   grid-template-columns: repeat(7, var(--card-w));
-  gap: 8px;
+  gap: var(--gap);
   align-items: start;
 }
 
@@ -238,6 +241,16 @@
   cursor: pointer;
   transition: box-shadow 0.1s, opacity 0.1s;
   box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+  touch-action: none;
+}
+
+/* Ghost card rendered during pointer drag */
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.85;
+  transform: translate(-50%, -40%);
 }
 
 .card:hover {
