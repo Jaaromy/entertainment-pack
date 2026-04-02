@@ -96,6 +96,28 @@ function checkCanAutoComplete(state: GameState): boolean {
   return true;
 }
 
+/**
+ * Dispatch a card move from `src` to (`destArea`, `destPile`).
+ * Returns the new GameState, or null if the move is illegal.
+ */
+function attemptMove(
+  state: GameState,
+  src: CardLocation,
+  destArea: 'foundation' | 'tableau',
+  destPile: number,
+): GameState | null {
+  if (destArea === 'foundation') {
+    if (src.area === 'waste')   return moveWasteToFoundation(state, destPile);
+    if (src.area === 'tableau') return moveTableauToFoundation(state, src.pile, destPile);
+    return null; // foundation → foundation: no-op
+  }
+  // destArea === 'tableau'
+  if (src.area === 'waste')      return moveWasteToTableau(state, destPile);
+  if (src.area === 'tableau')    return moveTableauToTableau(state, src.pile, src.cardIndex, destPile);
+  if (src.area === 'foundation') return moveFoundationToTableau(state, src.pile, destPile);
+  return null;
+}
+
 export function useKlondike(): UseKlondikeReturn {
   const [gwh, setGwh] = useState<GameWithHistory>(() => {
     const saved = loadGame();
@@ -147,36 +169,9 @@ export function useKlondike(): UseKlondikeReturn {
   const tryMoveSelectionTo = useCallback((
     sel: Selection,
     area: 'foundation' | 'tableau',
-    pile: number
+    pile: number,
   ): boolean => {
-    const src = sel.location;
-
-    if (area === 'foundation') {
-      // Move to foundation
-      if (src.area === 'waste') {
-        return commit(moveWasteToFoundation(state, pile));
-      }
-      if (src.area === 'tableau') {
-        return commit(moveTableauToFoundation(state, src.pile, pile));
-      }
-      if (src.area === 'foundation') {
-        return false;
-      }
-    }
-
-    if (area === 'tableau') {
-      if (src.area === 'waste') {
-        return commit(moveWasteToTableau(state, pile));
-      }
-      if (src.area === 'tableau') {
-        return commit(moveTableauToTableau(state, src.pile, src.cardIndex, pile));
-      }
-      if (src.area === 'foundation') {
-        return commit(moveFoundationToTableau(state, src.pile, pile));
-      }
-    }
-
-    return false;
+    return commit(attemptMove(state, sel.location, area, pile));
   }, [state, commit]);
 
   const onCardClick = useCallback((loc: CardLocation) => {
@@ -292,28 +287,7 @@ export function useKlondike(): UseKlondikeReturn {
   const onDrop = useCallback((area: 'foundation' | 'tableau', pile: number) => {
     const ds = dragSourceRef.current;
     if (!ds) return;
-
-    const src = ds.loc;
-    const st = stateRef.current;
-
-    if (area === 'foundation') {
-      if (src.area === 'waste') {
-        commit(moveWasteToFoundation(st, pile));
-      } else if (src.area === 'tableau') {
-        commit(moveTableauToFoundation(st, src.pile, pile));
-      } else if (src.area === 'foundation') {
-        // no-op
-      }
-    } else if (area === 'tableau') {
-      if (src.area === 'waste') {
-        commit(moveWasteToTableau(st, pile));
-      } else if (src.area === 'tableau') {
-        commit(moveTableauToTableau(st, src.pile, src.cardIndex, pile));
-      } else if (src.area === 'foundation') {
-        commit(moveFoundationToTableau(st, src.pile, pile));
-      }
-    }
-
+    commit(attemptMove(stateRef.current, ds.loc, area, pile));
     setDragSource(null);
   }, [commit]);
 

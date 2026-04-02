@@ -13,6 +13,8 @@ npm run test:watch # Watch mode for tests
 
 To run a single test file: `npx vitest run src/games/klondike/__tests__/gameLogic.test.ts`
 
+To benchmark hot-path pure functions: `npx vitest bench --run` (see `gameLogic.bench.ts`)
+
 CI runs `npm test` before every deploy to GitHub Pages.
 
 ## Architecture

@@ -37,16 +37,9 @@ function last<T>(arr: T[]): T | undefined {
   return arr[arr.length - 1];
 }
 
-/** Shallow-clone the foundations tuple. */
-function cloneFoundations(
-  f: GameState['foundations'],
-): GameState['foundations'] {
-  return f.map((pile) => pile.slice()) as GameState['foundations'];
-}
-
-/** Shallow-clone the tableau tuple. */
-function cloneTableau(t: GameState['tableau']): GameState['tableau'] {
-  return t.map((pile) => pile.slice()) as GameState['tableau'];
+/** Shallow-clone any tuple of Card arrays. */
+function clonePiles<T extends Card[][]>(piles: T): T {
+  return piles.map((pile) => pile.slice()) as T;
 }
 
 /**
@@ -63,7 +56,7 @@ export function flipTableauCard(
   if (top.faceUp) return null;
 
   const scoreDelta = state.scoringMode === 'standard' ? SCORE_FLIP_TABLEAU : 0;
-  const newTableau = cloneTableau(state.tableau);
+  const newTableau = clonePiles(state.tableau);
   newTableau[pileIndex][newTableau[pileIndex].length - 1] = { ...top, faceUp: true };
 
   return {
@@ -227,6 +220,14 @@ export function recycleWaste(state: GameState): GameState | null {
 // Waste → Destination
 // ---------------------------------------------------------------------------
 
+/** Remove the top waste card, returning updated waste fields for state spread. */
+function popWaste(state: GameState): Pick<GameState, 'waste' | 'wasteBatchSize'> {
+  return {
+    waste: state.waste.slice(0, -1),
+    wasteBatchSize: Math.max(0, state.wasteBatchSize - 1),
+  };
+}
+
 /** Move the top card of the waste to a foundation pile. */
 export function moveWasteToFoundation(
   state: GameState,
@@ -242,13 +243,12 @@ export function moveWasteToFoundation(
       ? SCORE_WASTE_TO_FOUNDATION
       : VEGAS_CARD_TO_FOUNDATION;
 
-  const newFoundations = cloneFoundations(state.foundations);
+  const newFoundations = clonePiles(state.foundations);
   newFoundations[foundationIndex].push({ ...card, faceUp: true });
 
   return checkWin({
     ...state,
-    waste: state.waste.slice(0, -1),
-    wasteBatchSize: Math.max(0, state.wasteBatchSize - 1),
+    ...popWaste(state),
     foundations: newFoundations,
     score: state.score + scoreDelta,
     moves: state.moves + 1,
@@ -268,13 +268,12 @@ export function moveWasteToTableau(
   const scoreDelta =
     state.scoringMode === 'standard' ? SCORE_WASTE_TO_TABLEAU : 0;
 
-  const newTableau = cloneTableau(state.tableau);
+  const newTableau = clonePiles(state.tableau);
   newTableau[tableauIndex].push({ ...card, faceUp: true });
 
   return {
     ...state,
-    waste: state.waste.slice(0, -1),
-    wasteBatchSize: Math.max(0, state.wasteBatchSize - 1),
+    ...popWaste(state),
     tableau: newTableau,
     score: state.score + scoreDelta,
     moves: state.moves + 1,
@@ -307,10 +306,10 @@ export function moveTableauToFoundation(
       ? SCORE_TABLEAU_TO_FOUNDATION
       : VEGAS_CARD_TO_FOUNDATION;
 
-  const newTableau = cloneTableau(state.tableau);
+  const newTableau = clonePiles(state.tableau);
   newTableau[fromPile].pop();
 
-  const newFoundations = cloneFoundations(state.foundations);
+  const newFoundations = clonePiles(state.foundations);
   newFoundations[foundationIndex].push({ ...card, faceUp: true });
 
   return checkWin({
@@ -346,7 +345,7 @@ export function moveTableauToTableau(
 
   const stack = from.slice(cardIndex);
 
-  const newTableau = cloneTableau(state.tableau);
+  const newTableau = clonePiles(state.tableau);
   newTableau[fromPile].splice(cardIndex);
   newTableau[toPile].push(...stack);
 
@@ -379,10 +378,10 @@ export function moveFoundationToTableau(
       ? SCORE_FOUNDATION_TO_TABLEAU
       : -VEGAS_CARD_TO_FOUNDATION;
 
-  const newFoundations = cloneFoundations(state.foundations);
+  const newFoundations = clonePiles(state.foundations);
   newFoundations[foundationIndex].pop();
 
-  const newTableau = cloneTableau(state.tableau);
+  const newTableau = clonePiles(state.tableau);
   newTableau[tableauIndex].push({ ...card, faceUp: true });
 
   return {

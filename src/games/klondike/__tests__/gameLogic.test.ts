@@ -853,6 +853,31 @@ describe('moveFoundationToTableau', () => {
     });
     expect(moveFoundationToTableau(state, 0, 0)!.score).toBe(-5);
   });
+
+  it('increments moves counter', () => {
+    const state = makeState({
+      foundations: [[card(1, 'hearts'), card(2, 'hearts')], [], [], []],
+      tableau: [[card(3, 'spades')], [], [], [], [], [], []],
+    });
+    expect(moveFoundationToTableau(state, 0, 0)!.moves).toBe(1);
+  });
+
+  it('moves King to empty tableau pile', () => {
+    const state = makeState({
+      foundations: [
+        Array.from({ length: 13 }, (_, i) => card((i + 1) as Card['rank'], 'hearts')),
+        [],
+        [],
+        [],
+      ],
+      tableau: [[], [], [], [], [], [], []],
+    });
+    const next = moveFoundationToTableau(state, 0, 0);
+    expect(next).not.toBeNull();
+    expect(next!.foundations[0]).toHaveLength(12);
+    expect(next!.tableau[0]).toHaveLength(1);
+    expect(next!.tableau[0]![0]!.rank).toBe(13);
+  });
 });
 
 // ---------------------------------------------------------------------------

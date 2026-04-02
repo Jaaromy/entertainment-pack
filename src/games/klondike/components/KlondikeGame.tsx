@@ -15,30 +15,27 @@ interface KlondikeGameProps {
   onNavigate: (view: 'stats' | 'gallery') => void;
 }
 
-// Immediately hide source cards in the DOM, before React re-renders.
-// For tableau, hides the grabbed card and all cards above it in the pile.
-function hideSourceCards(sourceEl: HTMLElement, loc: CardLocation): void {
+// Set or clear inline opacity on drag source cards before/after React re-renders.
+// For tableau: hiding applies only from the grabbed card onward; restoring clears all
+// cards in the pile (safe, since only the dragged subset was set).
+function setDragSourceOpacity(
+  sourceEl: HTMLElement,
+  loc: CardLocation,
+  opacity: '' | '0',
+): void {
   if (loc.area === 'tableau') {
     const pileEl = sourceEl.closest('.tableau-pile');
     if (pileEl) {
-      const cardEls = Array.from(pileEl.querySelectorAll<HTMLElement>('.card'));
-      const idx = cardEls.indexOf(sourceEl);
-      if (idx >= 0) cardEls.slice(idx).forEach(el => { el.style.opacity = '0'; });
+      if (opacity === '0') {
+        const cardEls = Array.from(pileEl.querySelectorAll<HTMLElement>('.card'));
+        const idx = cardEls.indexOf(sourceEl);
+        if (idx >= 0) cardEls.slice(idx).forEach(el => { el.style.opacity = opacity; });
+      } else {
+        pileEl.querySelectorAll<HTMLElement>('.card').forEach(el => { el.style.opacity = opacity; });
+      }
     }
   } else {
-    sourceEl.style.opacity = '0';
-  }
-}
-
-// Clear the inline opacity set by hideSourceCards so CSS classes take back control.
-function restoreSourceCards(sourceEl: HTMLElement, loc: CardLocation): void {
-  if (loc.area === 'tableau') {
-    const pileEl = sourceEl.closest('.tableau-pile');
-    if (pileEl) {
-      pileEl.querySelectorAll<HTMLElement>('.card').forEach(el => { el.style.opacity = ''; });
-    }
-  } else {
-    sourceEl.style.opacity = '';
+    sourceEl.style.opacity = opacity;
   }
 }
 
@@ -120,7 +117,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
         if (dx * dx + dy * dy < 25) return; // 5px threshold
         dragging = true;
         // Hide source cards immediately in DOM — no React render delay, no browser ghost.
-        hideSourceCards(sourceEl, loc);
+        setDragSourceOpacity(sourceEl, loc, '0');
         // Set React state so the preview renders and isDragSource is applied.
         onPointerDragStart(loc, offsetX, offsetY);
       }
@@ -153,7 +150,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
 
       // Hide preview and restore inline styles (CSS class handles opacity from here).
       if (dragPreviewRef.current) dragPreviewRef.current.style.display = 'none';
-      restoreSourceCards(sourceEl, loc);
+      setDragSourceOpacity(sourceEl, loc, '');
 
       // Calculate drop target by card overlap, same logic as before.
       const cs = cardSizeRef.current;

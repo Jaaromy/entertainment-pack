@@ -89,12 +89,19 @@ export function recordResult(
   const prev = all[key] ?? emptyModeStats();
 
   const newStreak = won ? prev.currentStreak + 1 : 0;
+
+  function updatedBestScore(): number | null {
+    if (!won) return prev.bestScore;
+    if (prev.bestScore === null) return score;
+    return Math.max(prev.bestScore, score);
+  }
+
   const next: ModeStats = {
     gamesPlayed: prev.gamesPlayed + 1,
     gamesWon:       won ? prev.gamesWon + 1 : prev.gamesWon,
     currentStreak:  newStreak,
     bestStreak:     Math.max(prev.bestStreak, newStreak),
-    bestScore:      won ? (prev.bestScore === null ? score : Math.max(prev.bestScore, score)) : prev.bestScore,
+    bestScore:      updatedBestScore(),
   };
 
   setItem(KEY_STATS, { ...all, [key]: next });
