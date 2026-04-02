@@ -33,7 +33,6 @@ export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onS
   return (
     <div className="menu-bar">
       <div className="menu-bar-left">
-      <button className="menu-deal-button" onClick={onDeal}>Deal</button>
       <div className="menu-bar-inner" ref={ref}>
         <button
           className={`menu-trigger${open ? ' menu-trigger--open' : ''}`}
@@ -43,7 +42,7 @@ export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onS
         </button>
         {open && (
           <div className="menu-dropdown">
-            <button className="menu-option" onClick={() => pick(onUndo)} disabled={!canUndo}>Undo</button>
+            <button className="menu-option" onClick={() => pick(onDeal)}>Deal</button>
             <div className="menu-divider" />
             <button className="menu-option" onClick={() => pick(onOptions)}>Options</button>
             <div className="menu-divider" />
@@ -52,6 +51,7 @@ export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onS
           </div>
         )}
       </div>
+      <button className="menu-deal-button" onClick={onUndo} disabled={!canUndo}>Undo</button>
       </div>
       <span className="menu-score">{score}</span>
     </div>

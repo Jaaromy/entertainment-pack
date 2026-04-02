@@ -15,7 +15,7 @@ const MODES: ModeConfig[] = [
   { drawMode: 3, scoringMode: 'vegas',    label: 'Draw 3 – Vegas'    },
 ];
 
-const EMPTY: ModeStats = { gamesPlayed: 0, gamesWon: 0, currentStreak: 0, bestStreak: 0, bestScore: 0 };
+const EMPTY: ModeStats = { gamesPlayed: 0, gamesWon: 0, currentStreak: 0, bestStreak: 0, bestScore: null };
 
 function winRate(s: ModeStats): string {
   if (s.gamesPlayed === 0) return '—';
@@ -44,7 +44,7 @@ export default function StatsScreen({ onBack }: StatsScreenProps) {
                 <StatRow label="Played"         value={s.gamesPlayed === 0 ? '—' : String(s.gamesPlayed)} />
                 <StatRow label="Won"            value={s.gamesWon === 0 && s.gamesPlayed === 0 ? '—' : String(s.gamesWon)} />
                 <StatRow label="Win rate"       value={winRate(s)} />
-                <StatRow label="Best score"     value={s.gamesWon === 0 ? '—' : String(s.bestScore)} />
+                <StatRow label="Best score"     value={s.bestScore === null ? '—' : String(s.bestScore)} />
                 <StatRow label="Best streak"    value={s.bestStreak === 0 ? '—' : String(s.bestStreak)} />
                 <StatRow label="Current streak" value={s.currentStreak === 0 ? '—' : String(s.currentStreak)} />
               </div>

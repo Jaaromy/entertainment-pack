@@ -127,6 +127,17 @@ describe('recordResult – win', () => {
     recordResult(1, 'standard', true, 50);
     expect(loadStats()['1-standard']!.bestScore).toBe(200);
   });
+
+  it('records negative bestScore on first win (Vegas cumulative pot)', () => {
+    recordResult(1, 'vegas', true, -20);
+    expect(loadStats()['1-vegas']!.bestScore).toBe(-20);
+  });
+
+  it('updates bestScore when a later win has a higher negative score', () => {
+    recordResult(1, 'vegas', true, -30);
+    recordResult(1, 'vegas', true, -10);
+    expect(loadStats()['1-vegas']!.bestScore).toBe(-10);
+  });
 });
 
 describe('recordResult – loss', () => {

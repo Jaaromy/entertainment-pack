@@ -18,7 +18,7 @@ export interface ModeStats {
   gamesWon: number;
   currentStreak: number;
   bestStreak: number;
-  bestScore: number;
+  bestScore: number | null; // null = no wins recorded yet
 }
 
 function modeKey(drawMode: DrawMode, scoringMode: ScoringMode): string {
@@ -26,7 +26,7 @@ function modeKey(drawMode: DrawMode, scoringMode: ScoringMode): string {
 }
 
 function emptyModeStats(): ModeStats {
-  return { gamesPlayed: 0, gamesWon: 0, currentStreak: 0, bestStreak: 0, bestScore: 0 };
+  return { gamesPlayed: 0, gamesWon: 0, currentStreak: 0, bestStreak: 0, bestScore: null };
 }
 
 function getItem<T>(key: string): T | null {
@@ -94,7 +94,7 @@ export function recordResult(
     gamesWon:       won ? prev.gamesWon + 1 : prev.gamesWon,
     currentStreak:  newStreak,
     bestStreak:     Math.max(prev.bestStreak, newStreak),
-    bestScore:      won ? Math.max(prev.bestScore, score) : prev.bestScore,
+    bestScore:      won ? (prev.bestScore === null ? score : Math.max(prev.bestScore, score)) : prev.bestScore,
   };
 
   setItem(KEY_STATS, { ...all, [key]: next });
