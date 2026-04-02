@@ -10,8 +10,7 @@ interface TableauPileProps {
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'tableau', pile: number) => void;
-  onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
-  onDragEnd: () => void;
+  onPointerDown: (loc: CardLocation, e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 function isCardDragSource(
@@ -33,8 +32,7 @@ function TableauPile({
   onCardClick,
   onCardDoubleClick,
   onEmptyPileClick,
-  onDragStart,
-  onDragEnd,
+  onPointerDown,
 }: TableauPileProps) {
   // Calculate heights
   let totalOffset = 0;
@@ -48,7 +46,12 @@ function TableauPile({
   }
   const containerHeight = cards.length === 0 ? 100 : totalOffset + 100;
 
-  if (cards.length === 0) {
+  const allCardsDragged =
+    dragSource?.loc.area === 'tableau' &&
+    dragSource.loc.pile === pileIndex &&
+    dragSource.loc.cardIndex === 0;
+
+  if (cards.length === 0 || allCardsDragged) {
     return (
       <div
         className="tableau-pile pile-slot"
@@ -56,7 +59,6 @@ function TableauPile({
         data-drop-area="tableau"
         data-drop-pile={pileIndex}
         onClick={() => onEmptyPileClick('tableau', pileIndex)}
-        onDragOver={e => e.preventDefault()}
       />
     );
   }
@@ -67,28 +69,27 @@ function TableauPile({
       style={{ height: containerHeight }}
       data-drop-area="tableau"
       data-drop-pile={pileIndex}
-      onDragOver={e => e.preventDefault()}
     >
       {cards.map((card, i) => {
         const loc: CardLocation = { area: 'tableau', pile: pileIndex, cardIndex: i };
         const isDragSrc = isCardDragSource(i, pileIndex, dragSource);
 
+        const isFlippable = !card.faceUp && i === cards.length - 1;
         return (
           <CardView
             key={card.id}
             card={card}
             isDragSource={isDragSrc}
-            draggable={card.faceUp}
             style={{
               position: 'absolute',
               top: offsets[i],
               left: 0,
               zIndex: i + 1,
+              ...(isFlippable ? { cursor: 'pointer' } : {}),
             }}
             onClick={() => onCardClick(loc)}
             onDoubleClick={() => onCardDoubleClick(loc)}
-            onDragStart={e => onDragStart(loc, e)}
-            onDragEnd={onDragEnd}
+            onPointerDown={card.faceUp ? e => onPointerDown(loc, e) : undefined}
           />
         );
       })}

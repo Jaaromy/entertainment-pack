@@ -242,6 +242,7 @@
 
 .card--drag-source {
   opacity: 0;
+  transition: none;
 }
 
 /* ---- Face-down card ---- */
@@ -297,6 +298,7 @@
 
 .stock-pile .card {
   position: relative;
+  cursor: pointer;
 }
 
 .stock-count {

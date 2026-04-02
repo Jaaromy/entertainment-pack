@@ -9,8 +9,7 @@ interface WastePileProps {
   dragSource: { loc: CardLocation; cards: Card[] } | null;
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
-  onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
-  onDragEnd: () => void;
+  onPointerDown: (loc: CardLocation, e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 const WASTE_LOC: CardLocation = { area: 'waste' };
@@ -22,8 +21,7 @@ function WastePile({
   dragSource,
   onCardClick,
   onCardDoubleClick,
-  onDragStart,
-  onDragEnd,
+  onPointerDown,
 }: WastePileProps) {
   const isDragSrc = dragSource?.loc.area === 'waste';
 
@@ -43,12 +41,10 @@ function WastePile({
           <CardView
             card={top}
             isDragSource={isDragSrc}
-            draggable
             style={{ position: 'absolute', top: 0, left: 0 }}
             onClick={() => onCardClick(WASTE_LOC)}
             onDoubleClick={() => onCardDoubleClick(WASTE_LOC)}
-            onDragStart={e => onDragStart(WASTE_LOC, e)}
-            onDragEnd={onDragEnd}
+            onPointerDown={e => onPointerDown(WASTE_LOC, e)}
           />
         </div>
       </div>
@@ -71,12 +67,10 @@ function WastePile({
               key={card.id}
               card={card}
               isDragSource={isDragSrc && isTop}
-              draggable={isTop}
-              style={{ position: 'absolute', top: 0, left }}
+              style={{ position: 'absolute', top: 0, left, ...(!isTop ? { cursor: 'default' } : {}) }}
               onClick={isTop ? () => onCardClick(WASTE_LOC) : undefined}
               onDoubleClick={isTop ? () => onCardDoubleClick(WASTE_LOC) : undefined}
-              onDragStart={isTop ? e => onDragStart(WASTE_LOC, e) : undefined}
-              onDragEnd={isTop ? onDragEnd : undefined}
+              onPointerDown={isTop ? e => onPointerDown(WASTE_LOC, e) : undefined}
             />
           );
         })}

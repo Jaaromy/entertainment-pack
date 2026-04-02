@@ -10,8 +10,7 @@ interface FoundationPileProps {
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'foundation', pile: number) => void;
-  onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
-  onDragEnd: () => void;
+  onPointerDown: (loc: CardLocation, e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 function FoundationPile({
@@ -21,13 +20,12 @@ function FoundationPile({
   onCardClick,
   onCardDoubleClick,
   onEmptyPileClick,
-  onDragStart,
-  onDragEnd,
+  onPointerDown,
 }: FoundationPileProps) {
   const loc: CardLocation = { area: 'foundation', pile: index };
   const isDragSrc = dragSource?.loc.area === 'foundation' && dragSource.loc.pile === index;
 
-  if (cards.length === 0) {
+  if (cards.length === 0 || (isDragSrc && cards.length === 1)) {
     return (
       <div
         className="foundation-pile pile-slot"
@@ -35,7 +33,6 @@ function FoundationPile({
         data-drop-area="foundation"
         data-drop-pile={index}
         onClick={() => onEmptyPileClick('foundation', index)}
-        onDragOver={e => e.preventDefault()}
       />
     );
   }
@@ -48,17 +45,14 @@ function FoundationPile({
       style={{ borderRadius: 7 }}
       data-drop-area="foundation"
       data-drop-pile={index}
-      onDragOver={e => e.preventDefault()}
     >
       <CardView
         card={top}
         isDragSource={isDragSrc}
-        draggable
         style={{ position: 'relative' }}
         onClick={() => onCardClick(loc)}
         onDoubleClick={() => onCardDoubleClick(loc)}
-        onDragStart={e => onDragStart(loc, e)}
-        onDragEnd={onDragEnd}
+        onPointerDown={e => onPointerDown(loc, e)}
       />
     </div>
   );

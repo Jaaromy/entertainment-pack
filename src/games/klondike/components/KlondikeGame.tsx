@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import type { DrawMode, ScoringMode, CardLocation } from '../types'; // DrawMode/ScoringMode used in useState initialisers
+import { useState, useRef, useCallback } from 'react';
+import type { DrawMode, ScoringMode, CardLocation } from '../types';
 import { useKlondike } from '../hooks/useKlondike';
 import { loadSettings, saveSettings } from '../storage';
 import StockPile from './StockPile';
@@ -15,19 +15,44 @@ interface KlondikeGameProps {
   onNavigate: (view: 'stats' | 'gallery') => void;
 }
 
+// Immediately hide source cards in the DOM, before React re-renders.
+// For tableau, hides the grabbed card and all cards above it in the pile.
+function hideSourceCards(sourceEl: HTMLElement, loc: CardLocation): void {
+  if (loc.area === 'tableau') {
+    const pileEl = sourceEl.closest('.tableau-pile');
+    if (pileEl) {
+      const cardEls = Array.from(pileEl.querySelectorAll<HTMLElement>('.card'));
+      const idx = cardEls.indexOf(sourceEl);
+      if (idx >= 0) cardEls.slice(idx).forEach(el => { el.style.opacity = '0'; });
+    }
+  } else {
+    sourceEl.style.opacity = '0';
+  }
+}
+
+// Clear the inline opacity set by hideSourceCards so CSS classes take back control.
+function restoreSourceCards(sourceEl: HTMLElement, loc: CardLocation): void {
+  if (loc.area === 'tableau') {
+    const pileEl = sourceEl.closest('.tableau-pile');
+    if (pileEl) {
+      pileEl.querySelectorAll<HTMLElement>('.card').forEach(el => { el.style.opacity = ''; });
+    }
+  } else {
+    sourceEl.style.opacity = '';
+  }
+}
+
 export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   const {
     state,
     canUndo,
     canRecycleStock,
-    forceWin,
-    selection,
     dragSource,
     onStockClick,
     onCardClick,
     onCardDoubleClick,
     onEmptyPileClick,
-    onDragStart,
+    onPointerDragStart,
     onDragEnd,
     onDrop,
     doUndo,
@@ -37,19 +62,6 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   } = useKlondike();
 
   const [showOptions, setShowOptions] = useState(false);
-  const dragPreviewRef = useRef<HTMLDivElement>(null);
-
-  // pointerup fires immediately on mouse release — hide the preview at once
-  // rather than waiting for the OS-delayed dragend event.
-  useEffect(() => {
-    if (!dragSource) return;
-    const hide = () => {
-      const el = dragPreviewRef.current;
-      if (el) el.style.display = 'none';
-    };
-    document.addEventListener('pointerup', hide);
-    return () => document.removeEventListener('pointerup', hide);
-  }, [dragSource]);
   const [cardSize, setCardSize] = useState<'normal' | 'large'>(
     () => loadSettings()?.cardSize ?? 'large'
   );
@@ -61,6 +73,12 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   const [pendingScoringMode, setPendingScoringMode] = useState<ScoringMode>(
     () => loadSettings()?.scoringMode ?? state.scoringMode
   );
+
+  const dragPreviewRef = useRef<HTMLDivElement>(null);
+
+  // Ref so the pointermove/pointerup closures always see the current cardSize.
+  const cardSizeRef = useRef(cardSize);
+  cardSizeRef.current = cardSize;
 
   const handleDeal = () => {
     startNewGame(Date.now(), pendingDrawMode, pendingScoringMode);
@@ -84,62 +102,106 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   const handleFoundationEmptyClick = (area: 'foundation', pile: number) =>
     onEmptyPileClick(area, pile);
 
-  const handleDragEnd = () => {
-    onDragEnd();
-  };
-
   const handleBoardDoubleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('.card') || target.closest('button')) return;
     doAutoComplete();
   };
 
-  const handleBoardDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    const el = dragPreviewRef.current;
-    if (!el || !dragSource) return;
-    el.style.transform = `translate(${e.clientX - dragSource.offsetX}px, ${e.clientY - dragSource.offsetY}px)`;
-    el.style.display = 'block';
-  };
+  // Pointer-based drag: no HTML5 drag API, so no browser ghost image flash.
+  const handleCardPointerDown = useCallback((
+    loc: CardLocation,
+    e: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (e.button !== 0) return;
 
-  const handleBoardDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!dragSource) return;
+    const sourceEl = e.currentTarget;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const offsetX = e.nativeEvent.offsetX;
+    const offsetY = e.nativeEvent.offsetY;
+    let dragging = false;
 
-    const CARD_W = cardSize === 'large' ? 96 : 72;
-    const CARD_H = cardSize === 'large' ? 134 : 100;
+    const handleMove = (me: PointerEvent) => {
+      if (!dragging) {
+        const dx = me.clientX - startX;
+        const dy = me.clientY - startY;
+        if (dx * dx + dy * dy < 25) return; // 5px threshold
+        dragging = true;
+        // Hide source cards immediately in DOM — no React render delay, no browser ghost.
+        hideSourceCards(sourceEl, loc);
+        // Set React state so the preview renders and isDragSource is applied.
+        onPointerDragStart(loc, offsetX, offsetY);
+      }
 
-    const cardLeft = e.clientX - dragSource.offsetX;
-    const cardTop = e.clientY - dragSource.offsetY;
-    const cardRight = cardLeft + CARD_W;
-    const cardBottom = cardTop + CARD_H;
+      const el = dragPreviewRef.current;
+      if (el) {
+        el.style.transform = `translate(${me.clientX - offsetX}px, ${me.clientY - offsetY}px)`;
+        el.style.display = 'block';
+      }
+    };
 
-    let bestArea: 'tableau' | 'foundation' | null = null;
-    let bestPile = -1;
-    let bestOverlap = 0;
+    const handleUp = (ue: PointerEvent) => {
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
 
-    const pileElements = document.querySelectorAll<HTMLElement>('[data-drop-area]');
-    for (const el of pileElements) {
-      const rect = el.getBoundingClientRect();
-      const overlapX = Math.min(cardRight, rect.right) - Math.max(cardLeft, rect.left);
-      const overlapY = Math.min(cardBottom, rect.bottom) - Math.max(cardTop, rect.top);
-      if (overlapX > 0 && overlapY > 0) {
-        const overlap = overlapX * overlapY;
-        if (overlap > bestOverlap) {
-          bestOverlap = overlap;
-          bestArea = el.dataset.dropArea as 'tableau' | 'foundation';
-          bestPile = parseInt(el.dataset.dropPile!);
+      if (!dragging) return;
+
+      // Prevent the synthetic click from firing after a drag,
+      // but only if it lands near the drag-release position.
+      const releaseX = ue.clientX;
+      const releaseY = ue.clientY;
+      const suppressDragClick = (ce: MouseEvent) => {
+        document.removeEventListener('click', suppressDragClick, { capture: true });
+        const dx = ce.clientX - releaseX;
+        const dy = ce.clientY - releaseY;
+        if (dx * dx + dy * dy < 100) ce.stopImmediatePropagation(); // within ~10px
+      };
+      document.addEventListener('click', suppressDragClick, { capture: true });
+      setTimeout(() => document.removeEventListener('click', suppressDragClick, { capture: true }), 300);
+
+      // Hide preview and restore inline styles (CSS class handles opacity from here).
+      if (dragPreviewRef.current) dragPreviewRef.current.style.display = 'none';
+      restoreSourceCards(sourceEl, loc);
+
+      // Calculate drop target by card overlap, same logic as before.
+      const cs = cardSizeRef.current;
+      const CARD_W = cs === 'large' ? 96 : 72;
+      const CARD_H = cs === 'large' ? 134 : 100;
+      const cardLeft  = ue.clientX - offsetX;
+      const cardTop   = ue.clientY - offsetY;
+      const cardRight  = cardLeft + CARD_W;
+      const cardBottom = cardTop  + CARD_H;
+
+      let bestArea: 'tableau' | 'foundation' | null = null;
+      let bestPile = -1;
+      let bestOverlap = 0;
+
+      const pileElements = document.querySelectorAll<HTMLElement>('[data-drop-area]');
+      for (const el of pileElements) {
+        const rect = el.getBoundingClientRect();
+        const overlapX = Math.min(cardRight, rect.right)  - Math.max(cardLeft, rect.left);
+        const overlapY = Math.min(cardBottom, rect.bottom) - Math.max(cardTop,  rect.top);
+        if (overlapX > 0 && overlapY > 0) {
+          const overlap = overlapX * overlapY;
+          if (overlap > bestOverlap) {
+            bestOverlap = overlap;
+            bestArea = el.dataset.dropArea as 'tableau' | 'foundation';
+            bestPile = parseInt(el.dataset.dropPile!);
+          }
         }
       }
-    }
 
-    if (bestArea !== null) {
-      onDrop(bestArea, bestPile);
-    }
-  };
+      if (bestArea !== null) onDrop(bestArea, bestPile);
+      onDragEnd();
+    };
+
+    document.addEventListener('pointermove', handleMove);
+    document.addEventListener('pointerup', handleUp);
+  }, [onPointerDragStart, onDrop, onDragEnd]);
 
   return (
-    <div className="klondike-game" onDoubleClick={handleBoardDoubleClick} onDragOver={handleBoardDragOver} onDrop={handleBoardDrop}>
+    <div className="klondike-game" onDoubleClick={handleBoardDoubleClick}>
       <div
         className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}
       >
@@ -154,22 +216,13 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
           onGallery={() => onNavigate('gallery')}
         />
 
-        {/* Header */}
-        <div className="klondike-header">
-          <div className="klondike-header-left">
-            <span className="klondike-title">Solitaire</span>
-            {canAutoComplete && (
-              <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
-                Auto-Complete
-              </button>
-            )}
-            {forceWin && (
-              <button className="klondike-btn" onClick={forceWin} style={{ opacity: 0.5 }}>
-                Force Win
-              </button>
-            )}
+        {canAutoComplete && (
+          <div className="klondike-header">
+            <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
+              Auto-Complete
+            </button>
           </div>
-        </div>
+        )}
 
         {/* Top row */}
         <div className="klondike-top-row" style={{ position: 'relative' }}>
@@ -184,8 +237,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
                 dragSource={dragSource}
                 onCardClick={onCardClick}
                 onCardDoubleClick={onCardDoubleClick}
-                onDragStart={onDragStart}
-                onDragEnd={handleDragEnd}
+                onPointerDown={handleCardPointerDown}
               />
           }
 
@@ -201,8 +253,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
                 onCardClick={handleFoundationCardClick}
                 onCardDoubleClick={handleFoundationDoubleClick}
                 onEmptyPileClick={handleFoundationEmptyClick}
-                onDragStart={onDragStart}
-                onDragEnd={handleDragEnd}
+                onPointerDown={handleCardPointerDown}
               />
             ))}
           </div>
@@ -219,8 +270,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
               onCardClick={onCardClick}
               onCardDoubleClick={onCardDoubleClick}
               onEmptyPileClick={onEmptyPileClick}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
+              onPointerDown={handleCardPointerDown}
             />
           ))}
         </div>

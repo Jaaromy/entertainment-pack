@@ -41,7 +41,7 @@ interface UseKlondikeReturn {
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'foundation' | 'tableau', pile: number) => void;
-  onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
+  onPointerDragStart: (loc: CardLocation, offsetX: number, offsetY: number) => void;
   onDragEnd: () => void;
   onDrop: (area: 'foundation' | 'tableau', pile: number) => void;
   doUndo: () => void;
@@ -273,7 +273,7 @@ export function useKlondike(): UseKlondikeReturn {
     tryMoveSelectionTo(selection, area, pile);
   }, [selection, tryMoveSelectionTo]);
 
-  const onDragStart = useCallback((loc: CardLocation, e: React.DragEvent) => {
+  const onPointerDragStart = useCallback((loc: CardLocation, offsetX: number, offsetY: number) => {
     const cards = getCardsAtLocation(stateRef.current, loc);
     if (cards.length === 0) return;
 
@@ -283,10 +283,7 @@ export function useKlondike(): UseKlondikeReturn {
       if (!card?.faceUp) return;
     }
 
-    setDragSource({ loc, cards, offsetX: e.nativeEvent.offsetX, offsetY: e.nativeEvent.offsetY });
-    e.dataTransfer.effectAllowed = 'move';
-    // Set some drag data so the drag works
-    e.dataTransfer.setData('text/plain', loc.area);
+    setDragSource({ loc, cards, offsetX, offsetY });
   }, []);
 
   const onDragEnd = useCallback(() => {
@@ -384,7 +381,7 @@ export function useKlondike(): UseKlondikeReturn {
     onCardClick,
     onCardDoubleClick,
     onEmptyPileClick,
-    onDragStart,
+    onPointerDragStart,
     onDragEnd,
     onDrop,
     forceWin,
