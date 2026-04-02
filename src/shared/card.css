@@ -1,0 +1,68 @@
+/* =========================================================
+   Shared card primitives — used by all card games
+   ========================================================= */
+
+:root {
+  --card-w: 72px;
+  --card-h: 100px;
+}
+
+/* =========================================================
+   Card base
+   ========================================================= */
+
+.card {
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 4px;
+  border: 1px solid #888;
+  overflow: hidden;
+  position: absolute;
+  cursor: pointer;
+  transition: opacity 0.1s;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+}
+
+.card--drag-source {
+  opacity: 0;
+  transition: none;
+}
+
+/* ---- Face-down card ---- */
+.card--face-down {
+  cursor: default;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.25) 0px,
+      rgba(255,255,255,0.25) 1.5px,
+      transparent 1.5px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.25) 0px,
+      rgba(255,255,255,0.25) 1.5px,
+      transparent 1.5px,
+      transparent 8px
+    ),
+    #0793eb;
+}
+
+/* ---- Face-up card: sprite sheet provides the artwork ---- */
+.card--face-up {
+  background: #fff;
+}
+
+/* =========================================================
+   Pile slot (empty pile placeholder)
+   ========================================================= */
+
+.pile-slot {
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+}

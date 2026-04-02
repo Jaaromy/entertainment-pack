@@ -38,14 +38,22 @@ function FoundationPile({
   }
 
   const top = cards[cards.length - 1]!;
+  const under = isDragSrc && cards.length >= 2 ? cards[cards.length - 2] : null;
 
   return (
     <div
       className="foundation-pile"
-      style={{ borderRadius: 7 }}
+      style={{ borderRadius: 7, position: 'relative' }}
       data-drop-area="foundation"
       data-drop-pile={index}
     >
+      {under && (
+        <CardView
+          card={under}
+          isDragSource={false}
+          style={{ position: 'absolute', top: 0, left: 0 }}
+        />
+      )}
       <CardView
         card={top}
         isDragSource={isDragSrc}

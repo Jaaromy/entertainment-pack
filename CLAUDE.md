@@ -19,34 +19,56 @@ CI runs `npm test` before every deploy to GitHub Pages.
 
 ## Architecture
 
-This is a Klondike Solitaire game. React components are thin wrappers — all game logic lives in pure functions under `src/games/klondike/`.
+Multi-game entertainment pack. React components are thin wrappers — all game logic lives in pure functions. Games share card primitives via `src/shared/`.
 
-**State flow:**
+**Routing:** Hash-based (`/#/`, `/#/klondike`, `/#/blackjack`) via `src/router/useHashRoute.ts`. No router library. Bookmarkable URLs work on GitHub Pages.
+
+**Shared card library (`src/shared/`):**
+- `types.ts` — `Card`, `Suit`, `Rank`
+- `constants.ts` — `SUITS`, `RANKS`, `SUIT_SYMBOL`, `RED_SUITS`
+- `rng.ts` — `mulberry32` seeded PRNG + Fisher-Yates shuffle
+- `deck.ts` — `createDeck()`, `createShuffledDeck(seed)`
+- `spriteSheet.ts` — CSS background-position mapping for the 13×6 sprite sheet
+- `card.css` — `.card`, `.card--face-up/down`, `.pile-slot`, `--card-w`, `--card-h` CSS vars
+- `components/CardView.tsx` — Memoized card rendering component
+
+**State flow (both games follow this pattern):**
 ```
-User input (click/drag)
-  → useKlondike hook (src/games/klondike/hooks/useKlondike.ts)
+User input
+  → useGame hook (hooks/useKlondike.ts | hooks/useBlackjack.ts)
   → Pure game functions (gameLogic.ts) → GameState | null
-  → GameWithHistory (gameReducer.ts, manages undo)
+  → GameWithHistory (gameReducer.ts, manages single-level undo)
   → localStorage (storage.ts)
   → React re-render
 ```
 
-**Key modules:**
+**Klondike (`src/games/klondike/`):**
 - `gameLogic.ts` — All move functions are pure: `(GameState) → GameState | null`. Null means invalid move.
-- `gameReducer.ts` — Wraps GameState in GameWithHistory with undo support (history array + index pointer).
+- `gameReducer.ts` — Wraps GameState in GameWithHistory with undo support.
 - `useKlondike.ts` — The only stateful layer; bridges pure logic to React and localStorage.
-- `KlondikeGame.tsx` — Drag-and-drop via pointer events (not HTML5 drag API). Uses refs for drag preview positioning to avoid React re-renders mid-drag. Drop targets detected via bounding box overlap.
-- `spriteSheet.ts` — Maps card rank/suit to CSS `background-position` percentages for the 13×6 sprite sheet.
+- `KlondikeGame.tsx` — Drag-and-drop via pointer events (not HTML5 drag API).
+- Scoring modes: Standard (Windows rules) and Vegas (-$52 wager, +$5/foundation card).
+- Persistence keys: `ep:settings`, `ep:game`, `ep:stats`, `ep:vegas-pot`
 
-**Scoring modes:**
-- Standard: Windows Solitaire rules (+5 waste→tableau, +10 foundation, -15 undo, -100 recycle penalty for Draw-1).
-- Vegas: -$52 initial wager, +$5 per foundation card. Draw-1 = 0 recycles, Draw-3 = 2 recycles max.
+**Blackjack (`src/games/blackjack/`):**
+- `blackjackLogic.ts` — Pure functions: `placeBet`, `deal`, `hit`, `stand`, `doubleDown`, `split`, `playDealer`, `settleHands`, `nextRound`.
+- `blackjackReducer.ts` — Same undo pattern as Klondike.
+- `useBlackjack.ts` — Game controller hook.
+- `BlackjackGame.tsx` — Main UI component.
+- Rules: 4-deck shoe (default), 3:2 natural, dealer stands soft 17. `BlackjackOptions` struct ready for variants.
+- Persistence keys: `ep:bj:game`, `ep:bj:stats`, `ep:bj:settings`, `ep:bj:balance`
 
-**Persistence:** All game state, settings, stats, and Vegas pot are stored in localStorage.
+**Persistence:** All game state, settings, stats persisted to localStorage with `ep:` prefix.
 
 ## Conventions
 
-- All new game logic requires tests in `src/games/klondike/__tests__/`.
+- All new game logic requires tests in the relevant `__tests__/` directory (e.g. `src/games/klondike/__tests__/`, `src/games/blackjack/__tests__/`). New functionality without tests will not be accepted.
 - Game logic functions must remain pure (no side effects, no mutation).
 - `drawMode` is `1 | 3`; `scoringMode` is `"standard" | "vegas"`.
 - Stock array: last element = top card (next to draw). Waste array: last element = top (playable).
+
+## Documentation
+
+- **DECISIONS.md** — Update whenever a significant implementation decision is made (architecture, library choice, data model, approach trade-offs). Include date, decision, rationale, and alternatives considered.
+- **CLAUDE.md** — Update whenever project structure, commands, or architecture changes in a meaningful way.
+- **README.md** — Update whenever user-facing features, game rules, or deployment steps change.

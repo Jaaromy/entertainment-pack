@@ -13,6 +13,7 @@ import '../klondike.css';
 
 interface KlondikeGameProps {
   onNavigate: (view: 'stats' | 'gallery') => void;
+  onHome?: () => void;
 }
 
 // Set or clear inline opacity on drag source cards before/after React re-renders.
@@ -39,7 +40,7 @@ function setDragSourceOpacity(
   }
 }
 
-export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
+export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) {
   const {
     state,
     canUndo,
@@ -202,6 +203,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
           onOptions={() => setShowOptions(true)}
           onStats={() => onNavigate('stats')}
           onGallery={() => onNavigate('gallery')}
+          onHome={onHome}
         />
 
         {canAutoComplete && (

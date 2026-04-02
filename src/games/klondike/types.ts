@@ -1,15 +1,8 @@
-export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
-export type Rank = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+export type { Suit, Rank, Card } from '../../shared/types';
+import type { Card } from '../../shared/types';
 export type DrawMode = 1 | 3;
 export type ScoringMode = 'standard' | 'vegas';
 export type GameStatus = 'playing' | 'won';
-
-export interface Card {
-  id: string; // e.g. "1S" = Ace of Spades
-  suit: Suit;
-  rank: Rank;
-  faceUp: boolean;
-}
 
 /** Identifies where a card lives */
 export type CardLocation =
