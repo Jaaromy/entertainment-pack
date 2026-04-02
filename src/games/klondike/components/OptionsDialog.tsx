@@ -6,7 +6,7 @@ interface OptionsDialogProps {
   scoringMode: ScoringMode;
   cardSize: 'normal' | 'large';
   onConfirm: (drawMode: DrawMode, scoringMode: ScoringMode, cardSize: 'normal' | 'large') => void;
-  onResetWinnings: () => void;
+  onResetWinnings: (drawMode: DrawMode, scoringMode: ScoringMode) => void;
   onClose: () => void;
 }
 
@@ -63,7 +63,7 @@ export default function OptionsDialog({ drawMode, scoringMode, cardSize, onConfi
         </div>
 
         <div className="dialog-actions">
-          <button className="klondike-btn" onClick={onResetWinnings}>Reset Winnings</button>
+          <button className="klondike-btn" onClick={() => onResetWinnings(dm, sm)}>Reset Winnings</button>
           <button className="klondike-btn" onClick={onClose}>Cancel</button>
           <button className="klondike-btn klondike-btn--primary" onClick={() => onConfirm(dm, sm, cs)}>
             OK

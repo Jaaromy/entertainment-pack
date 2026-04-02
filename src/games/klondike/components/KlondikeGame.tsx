@@ -66,14 +66,6 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
     () => loadSettings()?.cardSize ?? 'large'
   );
 
-  // Pending settings — used on next Deal, independent of current game state
-  const [pendingDrawMode, setPendingDrawMode] = useState<DrawMode>(
-    () => loadSettings()?.drawMode ?? state.drawMode
-  );
-  const [pendingScoringMode, setPendingScoringMode] = useState<ScoringMode>(
-    () => loadSettings()?.scoringMode ?? state.scoringMode
-  );
-
   const dragPreviewRef = useRef<HTMLDivElement>(null);
 
   // Ref so the pointermove/pointerup closures always see the current cardSize.
@@ -81,13 +73,12 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
   cardSizeRef.current = cardSize;
 
   const handleDeal = () => {
-    startNewGame(Date.now(), pendingDrawMode, pendingScoringMode);
+    startNewGame(Date.now(), state.drawMode, state.scoringMode);
   };
 
   const handleConfirmOptions = (drawMode: DrawMode, scoringMode: ScoringMode, size: 'normal' | 'large') => {
-    setPendingDrawMode(drawMode);
-    setPendingScoringMode(scoringMode);
     setCardSize(size);
+    startNewGame(Date.now(), drawMode, scoringMode);
     saveSettings({ drawMode, scoringMode, cardSize: size });
     setShowOptions(false);
   };
@@ -305,12 +296,13 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
 
       {showOptions && (
         <OptionsDialog
-          drawMode={pendingDrawMode}
-          scoringMode={pendingScoringMode}
+          drawMode={state.drawMode}
+          scoringMode={state.scoringMode}
           cardSize={cardSize}
           onConfirm={handleConfirmOptions}
-          onResetWinnings={() => {
-            startNewGame(Date.now(), pendingDrawMode, pendingScoringMode, 0);
+          onResetWinnings={(drawMode, scoringMode) => {
+            startNewGame(Date.now(), drawMode, scoringMode, 0);
+            saveSettings({ drawMode, scoringMode, cardSize });
             setShowOptions(false);
           }}
           onClose={() => setShowOptions(false)}
