@@ -181,6 +181,7 @@ export function deal(state: BlackjackState): BlackjackState | null {
     ...state,
     shoe,
     dealtCount,
+    balance: state.balance - state.currentBet,
     playerHands: [hand],
     activeHandIndex: 0,
     dealerHand,

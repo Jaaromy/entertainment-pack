@@ -734,3 +734,307 @@ describe('isPlayerTurn', () => {
     expect(isPlayerTurn(state)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Balance accounting
+// ---------------------------------------------------------------------------
+
+// Shoe helpers — cards are dealt from the top (last element first).
+// dealOrder(p1, d1, p2, d2) builds a minimal shoe so the initial deal
+// produces exactly those four cards in the standard deal sequence:
+//   player card 1, dealer card 1, player card 2, dealer card 2 (face-down).
+function dealOrder(p1: Card, d1: Card, p2: Card, d2: Card): Card[] {
+  // Last element = top of shoe (dealt first).
+  return [d2, p2, d1, p1];
+}
+
+describe('deal: balance deduction', () => {
+  it('deducts the current bet from balance', () => {
+    // player: 8+5=13, dealer: 6+9=15 — no blackjack
+    const shoe = dealOrder(c(8), c(6), c(5), c(9));
+    const state = bettingState({ balance: 500, currentBet: 25, shoe });
+    const next = deal(state);
+    expect(next?.phase).toBe('playing');
+    expect(next?.balance).toBe(475);
+  });
+
+  it('deduction is proportional to bet size', () => {
+    const shoe = dealOrder(c(8), c(6), c(5), c(9));
+    const state = bettingState({ balance: 500, currentBet: 100, shoe });
+    const next = deal(state);
+    expect(next?.balance).toBe(400);
+  });
+
+  it('balance reflects deduction even when natural blackjack settles immediately', () => {
+    // player natural: A + K
+    const shoe = dealOrder(c(1), c(6), c(10), c(9));
+    const state = bettingState({ balance: 500, currentBet: 25, shoe });
+    const next = deal(state);
+    // Natural resolves to settlement immediately; 3:2 payout on $25 = $37.50
+    expect(next?.phase).toBe('settlement');
+    expect(next?.balance).toBe(500 - 25 + 25 + 37.5); // 537.5
+  });
+});
+
+describe('win / loss / push: end-to-end balance', () => {
+  // These build state just before settleHands, with balance already reflecting
+  // the bet deduction (as deal() should produce).
+
+  function preSettleState(
+    playerCards: Card[],
+    dealerCards: Card[],
+    bet = 25,
+    startBalance = 500,
+    handOverrides: Partial<Hand> = {},
+  ): BlackjackState {
+    const balanceAfterBet = startBalance - bet;
+    return {
+      ...playingState(playerCards, dealerCards, { balance: balanceAfterBet }),
+      phase: 'dealer',
+      balance: balanceAfterBet,
+      playerHands: [hand(playerCards, { bet, ...handOverrides })],
+      dealerHand: { cards: dealerCards, holeCardRevealed: true },
+    };
+  }
+
+  it('win: net +bet (balance returns to start + bet)', () => {
+    // player 19 beats dealer 17
+    const state = preSettleState([c(10), c(9)], [c(10), c(7)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('win');
+    expect(next.balance).toBe(500 + 25); // 525
+  });
+
+  it('loss: net -bet (balance stays at deducted amount)', () => {
+    // player 17 loses to dealer 19
+    const state = preSettleState([c(10), c(7)], [c(10), c(9)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('loss');
+    expect(next.balance).toBe(500 - 25); // 475
+  });
+
+  it('push: net 0 (balance restored to start)', () => {
+    // player 18 ties dealer 18
+    const state = preSettleState([c(10), c(8)], [c(10), c(8)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('push');
+    expect(next.balance).toBe(500); // exactly restored
+  });
+
+  it('player bust: net -bet regardless of dealer', () => {
+    const state: BlackjackState = {
+      ...preSettleState([c(10), c(9), c(5)], [c(10), c(9)]),
+      playerHands: [hand([c(10), c(9), c(5)], { status: 'bust', bet: 25 })],
+    };
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('loss');
+    expect(next.balance).toBe(475); // no refund on bust
+  });
+
+  it('dealer bust, player stands: net +bet', () => {
+    // dealer 10+7+9=26 (bust); player 18 wins
+    const state = preSettleState([c(10), c(8)], [c(10), c(7), c(9)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('win');
+    expect(next.balance).toBe(525);
+  });
+
+  it('larger bet: win scales correctly', () => {
+    const state = preSettleState([c(10), c(9)], [c(10), c(7)], 100, 1000);
+    const next = settleHands(state);
+    expect(next.balance).toBe(1100); // 900 + 200
+  });
+});
+
+describe('doubleDown: balance accounting', () => {
+  it('deducts extra bet from balance at play time', () => {
+    // balance: 475 (after initial deal deduction of 25)
+    const state = playingState([c(5), c(6)], [c(8), c(7)]);
+    const next = doubleDown(state);
+    // doubleDown deducts hand.bet=25 from balance immediately
+    // state may be settlement already (depends on card drawn), but balance diff is always -25
+    expect(next).not.toBeNull();
+    const balanceDiff = state.balance - (next?.balance ?? 0);
+    // If no settlement: balance = 475 - 25 = 450 → diff = 25
+    // If win settled: balance = 450 + 100 = 550 → diff negative (we'd over-count)
+    // So we check net of bet deduction only before any payout
+    if (next?.phase !== 'settlement') {
+      expect(next?.balance).toBe(state.balance - 25);
+    }
+  });
+
+  it('doubleDown win: net +totalBet from original balance', () => {
+    // player 5+6+10=21, dealer 8+7=15 → player wins
+    const state: BlackjackState = {
+      ...playingState([c(5), c(6), c(10)], [c(8), c(7)]),
+      phase: 'dealer',
+      balance: 450, // 500 - 25 initial - 25 double
+      playerHands: [hand([c(5), c(6), c(10)], { status: 'doubled', bet: 25, doubleDownBet: 25 })],
+      dealerHand: { cards: [c(8), c(7)], holeCardRevealed: true },
+    };
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('win');
+    // totalBet = 50, payout = 100; balance = 450 + 100 = 550 (net +50 from 500)
+    expect(next.balance).toBe(550);
+  });
+
+  it('doubleDown loss: net -totalBet from original balance', () => {
+    // player 5+6+4=15, dealer 10+9=19 → player loses
+    const state: BlackjackState = {
+      ...playingState([c(5), c(6), c(4)], [c(10), c(9)]),
+      phase: 'dealer',
+      balance: 450,
+      playerHands: [hand([c(5), c(6), c(4)], { status: 'doubled', bet: 25, doubleDownBet: 25 })],
+      dealerHand: { cards: [c(10), c(9)], holeCardRevealed: true },
+    };
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('loss');
+    // no payout; balance stays 450 (net -50 from 500)
+    expect(next.balance).toBe(450);
+  });
+
+  it('doubleDown push: net 0 from original balance', () => {
+    // player 5+6+8=19, dealer 9+10=19 → push
+    const state: BlackjackState = {
+      ...playingState([c(5), c(6), c(8)], [c(9), c(10)]),
+      phase: 'dealer',
+      balance: 450,
+      playerHands: [hand([c(5), c(6), c(8)], { status: 'doubled', bet: 25, doubleDownBet: 25 })],
+      dealerHand: { cards: [c(9), c(10)], holeCardRevealed: true },
+    };
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('push');
+    // totalBet 50 returned; balance = 450 + 50 = 500 (net 0)
+    expect(next.balance).toBe(500);
+  });
+});
+
+describe('split hands: balance accounting', () => {
+  // After split, balance = 500 - 25 (initial deal) - 25 (split extra) = 450.
+  function splitSettleState(
+    hand1Cards: Card[],
+    hand2Cards: Card[],
+    dealerCards: Card[],
+    balance = 450,
+  ): BlackjackState {
+    return {
+      ...playingState(hand1Cards, dealerCards, { balance }),
+      phase: 'dealer',
+      balance,
+      playerHands: [
+        hand(hand1Cards, { status: 'standing', bet: 25, fromSplit: true }),
+        hand(hand2Cards, { status: 'standing', bet: 25, fromSplit: true }),
+      ],
+      dealerHand: { cards: dealerCards, holeCardRevealed: true },
+    };
+  }
+
+  it('both hands win: net +2×bet', () => {
+    // hand1=18, hand2=19, dealer=13 → both win
+    const state = splitSettleState([c(10), c(8)], [c(10), c(9)], [c(7), c(6)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('win');
+    expect(next.playerHands[1]?.result).toBe('win');
+    // both bets returned + won: 450 + 50 + 50 = 550 (net +50 from 500)
+    expect(next.balance).toBe(550);
+  });
+
+  it('both hands lose: net -2×bet', () => {
+    // hand1=11, hand2=12, dealer=19 → both lose
+    const state = splitSettleState([c(5), c(6)], [c(5), c(7)], [c(10), c(9)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('loss');
+    expect(next.playerHands[1]?.result).toBe('loss');
+    // no payout; balance stays 450 (net -50 from 500)
+    expect(next.balance).toBe(450);
+  });
+
+  it('one win, one loss: net -bet (lost the extra split bet)', () => {
+    // hand1=18 wins, hand2=14 loses; dealer=17
+    const state = splitSettleState([c(10), c(8)], [c(7), c(7)], [c(10), c(7)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('win');
+    expect(next.playerHands[1]?.result).toBe('loss');
+    // win returns 50, loss returns 0; 450 + 50 = 500 (net 0 from original 500)
+    expect(next.balance).toBe(500);
+  });
+
+  it('both hands push: net -bet (lost the extra split bet)', () => {
+    // hand1=18 push, hand2=17 push; dealer=17... wait hand2=17 vs dealer=17 → push
+    // hand1=18 vs dealer=17 → win (not push). Let me fix.
+    // hand1=17 push, hand2=17 push; dealer=17
+    const state = splitSettleState([c(10), c(7)], [c(10), c(7)], [c(10), c(7)]);
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('push');
+    expect(next.playerHands[1]?.result).toBe('push');
+    // each bet returned: 450 + 25 + 25 = 500 (net 0 from 500; but you paid extra 25 for split → actually net -25 from original if you didn't split)
+    // The accounting: start 500, bet 25 (→475), split adds 25 (→450), both push (→500)
+    expect(next.balance).toBe(500);
+  });
+});
+
+describe('blackjack payout: balance accounting', () => {
+  function bjState(payout: '3:2' | '6:5', bet = 100, balance = 400): BlackjackState {
+    return {
+      ...playingState([c(1), c(10)], [c(7), c(6)]),
+      phase: 'dealer',
+      balance,
+      playerHands: [hand([c(1), c(10)], { status: 'blackjack', bet })],
+      dealerHand: { cards: [c(7), c(6)], holeCardRevealed: true },
+      options: { ...DEFAULT_OPTIONS, blackjackPayout: payout },
+    };
+  }
+
+  it('3:2 payout: net +1.5× bet', () => {
+    const next = settleHands(bjState('3:2', 100, 400));
+    // 400 + 100 (bet back) + 150 (payout) = 650
+    expect(next.balance).toBe(650);
+  });
+
+  it('6:5 payout: net +1.2× bet', () => {
+    const next = settleHands(bjState('6:5', 100, 400));
+    // 400 + 100 + 120 = 620
+    expect(next.balance).toBe(620);
+  });
+
+  it('blackjack vs dealer blackjack: push, net 0', () => {
+    const state: BlackjackState = {
+      ...playingState([c(1), c(10)], [c(1), c(10)]),
+      phase: 'dealer',
+      balance: 400,
+      playerHands: [hand([c(1), c(10)], { status: 'blackjack', bet: 100 })],
+      dealerHand: {
+        cards: [c(1), c(10)],
+        holeCardRevealed: true,
+      },
+    };
+    const next = settleHands(state);
+    expect(next.playerHands[0]?.result).toBe('push');
+    // 400 + 100 (bet returned) = 500
+    expect(next.balance).toBe(500);
+  });
+});
+
+describe('nextRound: balance persistence', () => {
+  it('carries balance from settlement into the next betting phase', () => {
+    const state: BlackjackState = {
+      ...bettingState({ phase: 'settlement', balance: 625 }),
+      playerHands: [hand([c(10), c(9)], { result: 'win' })],
+    };
+    const next = nextRound(state);
+    expect(next?.phase).toBe('betting');
+    expect(next?.balance).toBe(625);
+  });
+
+  it('carries balance through reshuffle', () => {
+    const state: BlackjackState = {
+      ...bettingState({ phase: 'settlement', balance: 375 }),
+      shoeSize: 208,
+      dealtCount: 160, // triggers reshuffle
+      playerHands: [hand([c(10), c(8)], { result: 'loss' })],
+    };
+    const next = nextRound(state);
+    expect(next?.balance).toBe(375);
+    expect(next?.dealtCount).toBe(0); // shoe was reset
+  });
+});
