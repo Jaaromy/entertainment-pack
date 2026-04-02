@@ -220,7 +220,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
           <StockPile cards={state.stock} canRecycle={canRecycleStock} onStockClick={onStockClick} />
 
           {state.status === 'won'
-            ? <span className="win-inline">You Win</span>
+            ? <span className="win-inline">You Win!</span>
             : <WastePile
                 cards={state.waste}
                 drawMode={state.drawMode}
