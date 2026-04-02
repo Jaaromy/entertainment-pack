@@ -5,6 +5,7 @@ import { cardFaceStyle } from '../spriteSheet';
 interface CardViewProps {
   card: Card;
   isDragSource: boolean;
+  draggable?: boolean;
   style?: React.CSSProperties;
   onClick?: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
@@ -14,6 +15,7 @@ interface CardViewProps {
 function CardView({
   card,
   isDragSource,
+  draggable,
   style,
   onClick,
   onDoubleClick,
@@ -33,6 +35,7 @@ function CardView({
     <div
       className={classes}
       style={faceStyle ? { ...faceStyle, ...style } : style}
+      draggable={draggable}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onPointerDown={onPointerDown}
