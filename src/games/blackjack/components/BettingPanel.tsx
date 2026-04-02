@@ -1,6 +1,8 @@
 import { memo } from 'react';
 
 interface BettingPanelProps {
+  isActive: boolean;
+  canDeal: boolean;
   balance: number;
   currentBet: number;
   chipValues: readonly number[];
@@ -9,8 +11,7 @@ interface BettingPanelProps {
   onDeal: () => void;
 }
 
-function BettingPanel({ balance, currentBet, chipValues, onChipClick, onClear, onDeal }: BettingPanelProps) {
-  const canDeal = currentBet > 0 && currentBet <= balance;
+function BettingPanel({ isActive, canDeal, balance, currentBet, chipValues, onChipClick, onClear, onDeal }: BettingPanelProps) {
 
   return (
     <div className="bj-betting-panel">
@@ -24,7 +25,7 @@ function BettingPanel({ balance, currentBet, chipValues, onChipClick, onClear, o
             key={value}
             className="bj-chip"
             onClick={() => onChipClick(value)}
-            disabled={currentBet + value > balance}
+            disabled={!isActive || currentBet + value > balance}
             title={`Add $${value}`}
           >
             ${value}
@@ -35,7 +36,7 @@ function BettingPanel({ balance, currentBet, chipValues, onChipClick, onClear, o
         <button
           className="bj-btn bj-btn--secondary"
           onClick={onClear}
-          disabled={currentBet === 0}
+          disabled={!isActive || currentBet === 0}
         >
           Clear
         </button>

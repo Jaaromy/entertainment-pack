@@ -20,7 +20,9 @@ function DealerHand({ dealerHand, showTotal }: DealerHandProps) {
 
   return (
     <div className="bj-hand-zone">
-      <div className="bj-hand-label">Dealer{total !== null ? ` — ${total}` : ''}</div>
+      {dealerHand.cards.length > 0 && (
+        <div className="bj-hand-label">Dealer{total !== null ? ` — ${total}` : ''}</div>
+      )}
       <div className="bj-cards-row">
         {visibleCards.map((card, i) => (
           <div key={card.id} className="bj-card-wrapper" style={{ zIndex: i }}>

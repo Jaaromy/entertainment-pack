@@ -10,7 +10,7 @@ export const DEFAULT_OPTIONS: BlackjackOptions = {
   allowInsurance: false,
   doubleAfterSplit: true,
   maxSplits: 3,
-  penetration: 0.25,
+  penetration: 0.10,
 };
 
 /** Chip denominations available in the betting panel */

@@ -28,7 +28,6 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
     onStand,
     onDoubleDown,
     onSplit,
-    onNextRound,
     onUndo,
     onNewGame,
     onSaveOptions,
@@ -48,6 +47,7 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
   const showDealerTotal = state.phase === 'settlement' || state.phase === 'dealer';
   const isSettled = state.phase === 'settlement';
   const isBetting = state.phase === 'betting';
+  const canDeal = (isBetting && state.currentBet > 0 && state.currentBet <= state.balance) || isSettled;
 
   const scoreDisplay = `$${state.balance}`;
 
@@ -61,21 +61,23 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
           <button className="menu-deal-button" onClick={() => setView('stats')}>Stats</button>
           {onHome && <button className="menu-deal-button" onClick={onHome}>All Games</button>}
         </div>
+        <div className="bj-shoe-tracker">
+          <div
+            className="bj-shoe-tracker__fill"
+            style={{ width: `${100 - (state.dealtCount / state.shoeSize) * 100}%` }}
+          />
+        </div>
         <span className="menu-score">{scoreDisplay}</span>
       </div>
 
       {/* Table */}
       <div className="bj-table">
-        {/* Dealer zone */}
-        {state.dealerHand.cards.length > 0 && (
+        {/* Card area — grows to fill available space */}
+        <div className="bj-cards-area">
           <DealerHand
             dealerHand={state.dealerHand}
             showTotal={showDealerTotal}
           />
-        )}
-
-        {/* Player hands */}
-        {state.playerHands.length > 0 && (
           <div className="bj-player-zone">
             {state.playerHands.map((hand, i) => (
               <PlayerHand
@@ -87,11 +89,13 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
               />
             ))}
           </div>
-        )}
+        </div>
 
-        {/* Betting panel (shown only in betting phase) */}
-        {isBetting && (
+        {/* Controls footer */}
+        <div className="bj-controls">
           <BettingPanel
+            isActive={isBetting || isSettled}
+            canDeal={canDeal}
             balance={state.balance}
             currentBet={state.currentBet}
             chipValues={chipValues}
@@ -99,39 +103,22 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
             onClear={onClearBet}
             onDeal={onDeal}
           />
-        )}
-
-        {/* Player action buttons */}
-        <ActionBar
-          isPlayerActive={isPlayerActive}
-          canSplit={canSplitHand}
-          canDoubleDown={canDoubleDownHand}
-          onHit={onHit}
-          onStand={onStand}
-          onDoubleDown={onDoubleDown}
-          onSplit={onSplit}
-        />
-
-        {/* Post-round controls */}
-        {isSettled && (
-          <div className="bj-round-end">
-            <button className="bj-btn bj-btn--primary" onClick={onNextRound}>
-              {state.balance > 0 ? 'Next Hand' : 'New Game'}
-            </button>
-            {state.balance <= 0 && (
-              <button className="bj-btn bj-btn--secondary" onClick={onNewGame}>
-                Reset Balance
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Balance warning */}
-        {state.balance === 0 && isSettled && (
-          <div style={{ color: '#ff5a5a', textAlign: 'center', marginTop: 12, fontSize: '1rem' }}>
-            Out of chips!
-          </div>
-        )}
+          <ActionBar
+            isPlayerActive={isPlayerActive}
+            canSplit={canSplitHand}
+            canDoubleDown={canDoubleDownHand}
+            onHit={onHit}
+            onStand={onStand}
+            onDoubleDown={onDoubleDown}
+            onSplit={onSplit}
+          />
+          {state.balance === 0 && isSettled && (
+            <div className="bj-out-of-chips">
+              <span>Out of chips!</span>
+              <button className="bj-btn bj-btn--secondary" onClick={onNewGame}>Reset Balance</button>
+            </div>
+          )}
+        </div>
       </div>
 
       {showOptions && (

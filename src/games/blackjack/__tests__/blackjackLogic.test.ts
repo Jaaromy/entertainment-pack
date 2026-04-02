@@ -157,15 +157,15 @@ describe('needsReshuffle', () => {
   });
 
   it('returns true when below penetration threshold', () => {
-    // penetration = 0.25 → reshuffle when remaining < 25%
-    // 157 dealt → 51 remaining = 51/208 ≈ 0.245 < 0.25 → true
-    const state = bettingState({ shoeSize: 208, dealtCount: 157 });
+    // penetration = 0.10 → reshuffle when remaining < 10%
+    // 188 dealt → 20 remaining = 20/208 ≈ 0.096 < 0.10 → true
+    const state = bettingState({ shoeSize: 208, dealtCount: 188 });
     expect(needsReshuffle(state)).toBe(true);
   });
 
-  it('returns false when exactly at penetration fraction', () => {
-    // 156 dealt → 52 remaining = 52/208 = 0.25 exactly → NOT < 0.25 → false
-    const state = bettingState({ shoeSize: 208, dealtCount: 156 });
+  it('returns false when just above penetration threshold', () => {
+    // 187 dealt → 21 remaining = 21/208 ≈ 0.101 > 0.10 → false
+    const state = bettingState({ shoeSize: 208, dealtCount: 187 });
     expect(needsReshuffle(state)).toBe(false);
   });
 
@@ -638,7 +638,7 @@ describe('nextRound', () => {
     const state: BlackjackState = {
       ...bettingState({ phase: 'settlement' }),
       shoeSize: 208,
-      dealtCount: 160, // ~77% dealt → below 25% threshold
+      dealtCount: 190, // ~91% dealt → below 10% threshold
     };
     const next = nextRound(state);
     expect(next?.shoeSize).toBe(208); // fresh shoe
@@ -1030,7 +1030,7 @@ describe('nextRound: balance persistence', () => {
     const state: BlackjackState = {
       ...bettingState({ phase: 'settlement', balance: 375 }),
       shoeSize: 208,
-      dealtCount: 160, // triggers reshuffle
+      dealtCount: 190, // triggers reshuffle (~91% dealt, below 10% threshold)
       playerHands: [hand([c(10), c(8)], { result: 'loss' })],
     };
     const next = nextRound(state);

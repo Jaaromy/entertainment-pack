@@ -45,7 +45,6 @@ export interface UseBlackjackReturn {
   onStand: () => void;
   onDoubleDown: () => void;
   onSplit: () => void;
-  onNextRound: () => void;
   onUndo: () => void;
   onNewGame: () => void;
   onSaveOptions: (options: Partial<BlackjackOptions>, size: 'normal' | 'large') => void;
@@ -83,17 +82,25 @@ export function useBlackjack(): UseBlackjackReturn {
   }, []);
 
   const onPlaceBet = useCallback((amount: number) => {
+    if (state.phase === 'settlement') {
+      if (amount <= 0 || amount > state.balance) return;
+      commit({ ...state, currentBet: amount });
+      return;
+    }
     const next = placeBet(state, amount);
     if (next) commit(next);
   }, [state, commit]);
 
   const onClearBet = useCallback(() => {
-    if (state.phase !== 'betting') return;
-    commit({ ...state, currentBet: 0 });
+    if (state.phase === 'settlement' || state.phase === 'betting') {
+      commit({ ...state, currentBet: 0 });
+    }
   }, [state, commit]);
 
   const onDeal = useCallback(() => {
-    const next = deal(state);
+    const base = state.phase === 'settlement' ? nextRound(state) : state;
+    if (!base) return;
+    const next = deal(base);
     if (next) commit(next);
   }, [state, commit]);
 
@@ -114,11 +121,6 @@ export function useBlackjack(): UseBlackjackReturn {
 
   const onSplit = useCallback(() => {
     const next = split(state);
-    if (next) commit(next);
-  }, [state, commit]);
-
-  const onNextRound = useCallback(() => {
-    const next = nextRound(state);
     if (next) commit(next);
   }, [state, commit]);
 
@@ -165,7 +167,6 @@ export function useBlackjack(): UseBlackjackReturn {
     onStand,
     onDoubleDown,
     onSplit,
-    onNextRound,
     onUndo,
     onNewGame,
     onSaveOptions,
