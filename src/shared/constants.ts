@@ -11,3 +11,11 @@ export const SUIT_SYMBOL: Record<Suit, string> = {
 };
 
 export const RED_SUITS: Suit[] = ['hearts', 'diamonds'];
+
+// ---- Card dimensions (tied to sprite sheet) ----
+export const CARD_WIDTH_NORMAL = 72;
+export const CARD_HEIGHT_NORMAL = 100;
+export const CARD_WIDTH_LARGE = 96;
+export const CARD_HEIGHT_LARGE = 134;
+/** Aspect ratio for responsive card sizing */
+export const CARD_ASPECT_RATIO = 100 / 72;

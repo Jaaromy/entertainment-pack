@@ -2,6 +2,11 @@ import { useState, useRef, useCallback } from 'react';
 import type { DrawMode, ScoringMode, CardLocation } from '../types';
 import { useKlondike } from '../hooks/useKlondike';
 import { loadSettings, saveSettings } from '../storage';
+import {
+  DRAG_START_THRESHOLD_SQ,
+  DRAG_CLICK_SUPPRESS_RADIUS_SQ,
+  DRAG_CLICK_SUPPRESS_TIMEOUT_MS,
+} from '../constants';
 import StockPile from './StockPile';
 import WastePile from './WastePile';
 import FoundationPile from './FoundationPile';
@@ -84,7 +89,7 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
       if (!dragging) {
         const dx = me.clientX - startX;
         const dy = me.clientY - startY;
-        if (dx * dx + dy * dy < 25) return;
+        if (dx * dx + dy * dy < DRAG_START_THRESHOLD_SQ) return;
         dragging = true;
         setDragSourceOpacity(sourceEl, loc, '0');
         onPointerDragStart(loc);
@@ -108,10 +113,10 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
         document.removeEventListener('click', suppressDragClick, { capture: true });
         const dx = ce.clientX - releaseX;
         const dy = ce.clientY - releaseY;
-        if (dx * dx + dy * dy < 100) ce.stopImmediatePropagation();
+        if (dx * dx + dy * dy < DRAG_CLICK_SUPPRESS_RADIUS_SQ) ce.stopImmediatePropagation();
       };
       document.addEventListener('click', suppressDragClick, { capture: true });
-      setTimeout(() => document.removeEventListener('click', suppressDragClick, { capture: true }), 300);
+      setTimeout(() => document.removeEventListener('click', suppressDragClick, { capture: true }), DRAG_CLICK_SUPPRESS_TIMEOUT_MS);
 
       if (dragPreviewRef.current) dragPreviewRef.current.style.display = 'none';
       setDragSourceOpacity(sourceEl, loc, '');
