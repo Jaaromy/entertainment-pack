@@ -34,7 +34,6 @@ interface UseKlondikeReturn {
   canRecycleStock: boolean;
   selection: Selection | null;
   dragSource: DragSource | null;
-  dragOverTarget: { area: string; pile: number } | null;
   ghostPos: { x: number; y: number } | null;
   ghostCards: Card[] | null;
   onStockClick: () => void;
@@ -136,7 +135,6 @@ export function useKlondike(): UseKlondikeReturn {
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
-  const [dragOverTarget, setDragOverTarget] = useState<{ area: string; pile: number } | null>(null);
   const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
   const [ghostCards, setGhostCards] = useState<Card[] | null>(null);
 
@@ -199,13 +197,9 @@ export function useKlondike(): UseKlondikeReturn {
         if (dropEl) {
           const area = dropEl.dataset.dropArea!;
           const pile = parseInt(dropEl.dataset.dropPile ?? '0', 10);
-          if (!drag.dragOver || drag.dragOver.area !== area || drag.dragOver.pile !== pile) {
-            drag.dragOver = { area, pile };
-            setDragOverTarget({ area, pile });
-          }
-        } else if (drag.dragOver) {
+          drag.dragOver = { area, pile };
+        } else {
           drag.dragOver = null;
-          setDragOverTarget(null);
         }
       }
     };
@@ -235,7 +229,6 @@ export function useKlondike(): UseKlondikeReturn {
 
       pointerDragRef.current = null;
       setDragSource(null);
-      setDragOverTarget(null);
       setGhostPos(null);
       setGhostCards(null);
     };
@@ -418,7 +411,6 @@ export function useKlondike(): UseKlondikeReturn {
     winRecordedRef.current = false;
     setSelection(null);
     setDragSource(null);
-    setDragOverTarget(null);
     setGhostPos(null);
     setGhostCards(null);
     const newGwh = createGame(seed, drawMode, scoringMode, initialScore);
@@ -440,7 +432,6 @@ export function useKlondike(): UseKlondikeReturn {
     canRecycleStock: checkCanRecycleStock(state),
     selection,
     dragSource,
-    dragOverTarget,
     ghostPos,
     ghostCards,
     onStockClick,

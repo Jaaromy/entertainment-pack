@@ -7,7 +7,6 @@ interface TableauPileProps {
   pileIndex: number;
   cards: Card[];
   dragSource: { loc: CardLocation; cards: Card[] } | null;
-  isDragOver: boolean;
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'tableau', pile: number) => void;
@@ -30,7 +29,6 @@ function TableauPile({
   pileIndex,
   cards,
   dragSource,
-  isDragOver,
   onCardClick,
   onCardDoubleClick,
   onEmptyPileClick,
@@ -56,7 +54,7 @@ function TableauPile({
   if (cards.length === 0 || allCardsDragged) {
     return (
       <div
-        className={`tableau-pile pile-slot${isDragOver ? ' pile-slot--drag-over' : ''}`}
+        className="tableau-pile pile-slot"
         style={emptySlotStyle}
         data-drop-area="tableau"
         data-drop-pile={pileIndex}
@@ -72,18 +70,6 @@ function TableauPile({
       data-drop-area="tableau"
       data-drop-pile={pileIndex}
     >
-      {isDragOver && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 7,
-            border: '2px solid #ffd600',
-            zIndex: 200,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
       {cards.map((card, i) => {
         const loc: CardLocation = { area: 'tableau', pile: pileIndex, cardIndex: i };
         const isDragSrc = isCardDragSource(i, pileIndex, dragSource);

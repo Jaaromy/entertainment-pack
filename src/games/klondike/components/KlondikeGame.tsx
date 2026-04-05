@@ -22,7 +22,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
     canUndo,
     canRecycleStock,
     dragSource,
-    dragOverTarget,
     ghostPos,
     ghostCards,
     onStockClick,
@@ -67,12 +66,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
     if (target.closest('.card') || target.closest('button')) return;
     doAutoComplete();
   };
-
-  const isFoundationDragOver = (pile: number) =>
-    dragOverTarget?.area === 'foundation' && dragOverTarget.pile === pile;
-
-  const isTableauDragOver = (pile: number) =>
-    dragOverTarget?.area === 'tableau' && dragOverTarget.pile === pile;
 
   return (
     <div className="klondike-game" onDoubleClick={handleBoardDoubleClick}>
@@ -125,7 +118,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
                 index={i}
                 cards={pile}
                 dragSource={dragSource}
-                isDragOver={isFoundationDragOver(i)}
                 onCardClick={handleFoundationCardClick}
                 onCardDoubleClick={handleFoundationDoubleClick}
                 onEmptyPileClick={handleFoundationEmptyClick}
@@ -143,7 +135,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
               pileIndex={i}
               cards={pile}
               dragSource={dragSource}
-              isDragOver={isTableauDragOver(i)}
               onCardClick={onCardClick}
               onCardDoubleClick={onCardDoubleClick}
               onEmptyPileClick={onEmptyPileClick}
@@ -151,8 +142,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
             />
           ))}
         </div>
-
-      </div>{/* end .klondike-board */}
 
       {ghostPos && ghostCards && ghostCards.length > 0 && (
         <div className="drag-ghost" style={{ left: ghostPos.x, top: ghostPos.y }}>
@@ -171,6 +160,8 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
           ))}
         </div>
       )}
+
+      </div>{/* end .klondike-board */}
 
       {showOptions && (
         <OptionsDialog

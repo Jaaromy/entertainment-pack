@@ -7,7 +7,6 @@ interface FoundationPileProps {
   index: number;
   cards: Card[];
   dragSource: { loc: CardLocation; cards: Card[] } | null;
-  isDragOver: boolean;
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'foundation', pile: number) => void;
@@ -18,7 +17,6 @@ function FoundationPile({
   index,
   cards,
   dragSource,
-  isDragOver,
   onCardClick,
   onCardDoubleClick,
   onEmptyPileClick,
@@ -30,7 +28,7 @@ function FoundationPile({
   if (cards.length === 0 || (isDragSrc && cards.length === 1)) {
     return (
       <div
-        className={`foundation-pile pile-slot${isDragOver ? ' pile-slot--drag-over' : ''}`}
+        className="foundation-pile pile-slot"
         style={emptySlotStyle}
         data-drop-area="foundation"
         data-drop-pile={index}
@@ -44,8 +42,8 @@ function FoundationPile({
 
   return (
     <div
-      className={`foundation-pile${isDragOver ? ' pile-slot--drag-over' : ''}`}
-      style={{ borderRadius: 7, position: 'relative', border: isDragOver ? '2px solid #ffd600' : undefined }}
+      className="foundation-pile"
+      style={{ borderRadius: 7, position: 'relative' }}
       data-drop-area="foundation"
       data-drop-pile={index}
     >
