@@ -41,7 +41,7 @@ interface UseKlondikeReturn {
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'foundation' | 'tableau', pile: number) => void;
-  onPointerDown: (loc: CardLocation, e: React.PointerEvent) => void;
+  onPointerDown: (loc: CardLocation, e: React.PointerEvent<HTMLDivElement>) => void;
   doUndo: () => void;
   startNewGame: (seed: number, drawMode: DrawMode, scoringMode: ScoringMode, overridePot?: number) => void;
   canAutoComplete: boolean;
@@ -160,7 +160,7 @@ export function useKlondike(): UseKlondikeReturn {
     dragOver: { area: string; pile: number } | null;
   } | null>(null);
 
-  // Suppresses the click event that fires after a completed drag
+  // Suppresses the click event that fires after a completed pointer drag
   const suppressNextClickRef = useRef(false);
 
   const commit = useCallback((newState: GameState | null) => {
@@ -210,7 +210,7 @@ export function useKlondike(): UseKlondikeReturn {
       }
     };
 
-    const handleUp = (e: PointerEvent) => {
+    const handleUp = () => {
       const drag = pointerDragRef.current;
       if (!drag) return;
 
@@ -269,7 +269,6 @@ export function useKlondike(): UseKlondikeReturn {
 
   const onCardClick = useCallback((loc: CardLocation) => {
     if (suppressNextClickRef.current) { suppressNextClickRef.current = false; return; }
-
     // Face-down tableau card: only the top card can be flipped by clicking
     if (loc.area === 'tableau') {
       const pile = state.tableau[loc.pile];
@@ -283,36 +282,53 @@ export function useKlondike(): UseKlondikeReturn {
     }
 
     if (!selection) {
+      // Start a selection
       const cards = getCardsAtLocation(state, loc);
-      if (cards.length > 0) setSelection({ location: loc, cards });
+      if (cards.length > 0) {
+        setSelection({ location: loc, cards });
+      }
       return;
     }
 
+    // Deselect if same card clicked
     if (locationsEqual(selection.location, loc)) {
       setSelection(null);
       return;
     }
 
+    // Try to move selection to clicked destination
     const destArea = loc.area;
     if (destArea === 'foundation' || destArea === 'tableau') {
+      // Clicking a card in a pile — treat the pile as the destination
       let destPile = 0;
-      if (destArea === 'foundation' && loc.area === 'foundation') destPile = loc.pile;
-      else if (destArea === 'tableau' && loc.area === 'tableau') destPile = loc.pile;
+      if (destArea === 'foundation' && loc.area === 'foundation') {
+        destPile = loc.pile;
+      } else if (destArea === 'tableau' && loc.area === 'tableau') {
+        destPile = loc.pile;
+      }
 
       const moved = tryMoveSelectionTo(selection, destArea as 'foundation' | 'tableau', destPile);
       if (!moved) {
+        // Re-select the clicked card
         const cards = getCardsAtLocation(state, loc);
-        if (cards.length > 0) setSelection({ location: loc, cards });
-        else setSelection(null);
+        if (cards.length > 0) {
+          setSelection({ location: loc, cards });
+        } else {
+          setSelection(null);
+        }
       }
     } else if (destArea === 'waste') {
+      // Clicking waste while something selected — re-select waste top
       const cards = getCardsAtLocation(state, loc);
-      if (cards.length > 0) setSelection({ location: loc, cards });
-      else setSelection(null);
+      if (cards.length > 0) {
+        setSelection({ location: loc, cards });
+      } else {
+        setSelection(null);
+      }
     } else {
       setSelection(null);
     }
-  }, [selection, state, tryMoveSelectionTo, commit]);
+  }, [selection, state, tryMoveSelectionTo]);
 
   const onCardDoubleClick = useCallback((loc: CardLocation) => {
     setSelection(null);
@@ -322,9 +338,10 @@ export function useKlondike(): UseKlondikeReturn {
     } else if (loc.area === 'tableau') {
       const pile = state.tableau[loc.pile];
       card = pile?.[loc.cardIndex];
+      // Only auto-move the top card of the pile
       if (loc.cardIndex !== (pile?.length ?? 0) - 1) return;
     } else if (loc.area === 'foundation') {
-      return;
+      return; // already on foundation
     }
 
     if (!card?.faceUp) return;
@@ -332,8 +349,11 @@ export function useKlondike(): UseKlondikeReturn {
     const fi = findFoundationTarget(state, card);
     if (fi < 0) return;
 
-    if (loc.area === 'waste') commit(moveWasteToFoundation(state, fi));
-    else if (loc.area === 'tableau') commit(moveTableauToFoundation(state, loc.pile, fi));
+    if (loc.area === 'waste') {
+      commit(moveWasteToFoundation(state, fi));
+    } else if (loc.area === 'tableau') {
+      commit(moveTableauToFoundation(state, loc.pile, fi));
+    }
   }, [state, commit]);
 
   const onEmptyPileClick = useCallback((area: 'foundation' | 'tableau', pile: number) => {
@@ -342,7 +362,7 @@ export function useKlondike(): UseKlondikeReturn {
     tryMoveSelectionTo(selection, area, pile);
   }, [selection, tryMoveSelectionTo]);
 
-  const onPointerDown = useCallback((loc: CardLocation, e: React.PointerEvent) => {
+  const onPointerDown = useCallback((loc: CardLocation, e: React.PointerEvent<HTMLDivElement>) => {
     // Only handle primary button; ignore right-click on desktop
     if (e.pointerType === 'mouse' && e.button !== 0) return;
 
@@ -371,6 +391,7 @@ export function useKlondike(): UseKlondikeReturn {
     });
   }, []);
 
+  // Record win and clear persisted game when the game is completed
   useEffect(() => {
     if (state.status === 'won' && !winRecordedRef.current) {
       winRecordedRef.current = true;
@@ -386,6 +407,9 @@ export function useKlondike(): UseKlondikeReturn {
     }
     let initialScore: number | undefined;
     if (scoringMode === 'vegas') {
+      // Use overridePot if provided (e.g. Reset Winnings), otherwise carry
+      // prev.score forward if already in Vegas (always current, even with no
+      // moves), or fall back to storage when switching from Standard.
       const pot = overridePot ?? (prev.scoringMode === 'vegas' ? prev.score : loadVegasPot());
       saveVegasPot(pot);
       initialScore = pot + VEGAS_INITIAL_BET;
@@ -394,6 +418,9 @@ export function useKlondike(): UseKlondikeReturn {
     winRecordedRef.current = false;
     setSelection(null);
     setDragSource(null);
+    setDragOverTarget(null);
+    setGhostPos(null);
+    setGhostCards(null);
     const newGwh = createGame(seed, drawMode, scoringMode, initialScore);
     saveGame(currentState(newGwh));
     setGwh(newGwh);
@@ -402,7 +429,9 @@ export function useKlondike(): UseKlondikeReturn {
   const doAutoComplete = useCallback(() => {
     setSelection(null);
     const newState = autoMoveToFoundation(state);
-    if (newState !== state) commit(newState);
+    if (newState !== state) {
+      commit(newState);
+    }
   }, [state, commit]);
 
   return {

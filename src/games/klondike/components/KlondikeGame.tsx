@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import type { DrawMode, ScoringMode, CardLocation } from '../types'; // DrawMode/ScoringMode used in useState initialisers
+import type { DrawMode, ScoringMode, CardLocation } from '../types';
 import { useKlondike } from '../hooks/useKlondike';
 import { loadSettings, saveSettings } from '../storage';
 import StockPile from './StockPile';
 import WastePile from './WastePile';
 import FoundationPile from './FoundationPile';
 import TableauPile from './TableauPile';
-import CardView from './CardView';
 import OptionsDialog from './OptionsDialog';
 import MenuBar from './MenuBar';
+import CardView from './CardView';
 import '../klondike.css';
 
 interface KlondikeGameProps {
@@ -21,7 +21,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
     state,
     canUndo,
     canRecycleStock,
-    selection,
     dragSource,
     dragOverTarget,
     ghostPos,
@@ -42,22 +41,13 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
     () => loadSettings()?.cardSize ?? 'large'
   );
 
-  // Pending settings — used on next Deal, independent of current game state
-  const [pendingDrawMode, setPendingDrawMode] = useState<DrawMode>(
-    () => loadSettings()?.drawMode ?? state.drawMode
-  );
-  const [pendingScoringMode, setPendingScoringMode] = useState<ScoringMode>(
-    () => loadSettings()?.scoringMode ?? state.scoringMode
-  );
-
   const handleDeal = () => {
-    startNewGame(Date.now(), pendingDrawMode, pendingScoringMode);
+    startNewGame(Date.now(), state.drawMode, state.scoringMode);
   };
 
   const handleConfirmOptions = (drawMode: DrawMode, scoringMode: ScoringMode, size: 'normal' | 'large') => {
-    setPendingDrawMode(drawMode);
-    setPendingScoringMode(scoringMode);
     setCardSize(size);
+    startNewGame(Date.now(), drawMode, scoringMode);
     saveSettings({ drawMode, scoringMode, cardSize: size });
     setShowOptions(false);
   };
@@ -67,20 +57,28 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
       ? `$${state.score}`
       : `${state.score}`;
 
+  const handleFoundationCardClick = (loc: CardLocation) => onCardClick(loc);
+  const handleFoundationDoubleClick = (loc: CardLocation) => onCardDoubleClick(loc);
+  const handleFoundationEmptyClick = (area: 'foundation', pile: number) =>
+    onEmptyPileClick(area, pile);
+
+  const handleBoardDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.card') || target.closest('button')) return;
+    doAutoComplete();
+  };
+
   const isFoundationDragOver = (pile: number) =>
     dragOverTarget?.area === 'foundation' && dragOverTarget.pile === pile;
 
   const isTableauDragOver = (pile: number) =>
     dragOverTarget?.area === 'tableau' && dragOverTarget.pile === pile;
 
-  const handleFoundationCardClick = (loc: CardLocation) => onCardClick(loc);
-  const handleFoundationDoubleClick = (loc: CardLocation) => onCardDoubleClick(loc);
-  const handleFoundationEmptyClick = (area: 'foundation', pile: number) =>
-    onEmptyPileClick(area, pile);
-
   return (
-    <div className="klondike-game">
-      <div className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}>
+    <div className="klondike-game" onDoubleClick={handleBoardDoubleClick}>
+      <div
+        className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}
+      >
 
         <MenuBar
           canUndo={canUndo}
@@ -93,28 +91,24 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
           onHome={onHome}
         />
 
-        {/* Header */}
-        <div className="klondike-header">
-          <div className="klondike-header-left">
-            <span className="klondike-title">Solitaire</span>
-            {canAutoComplete && (
-              <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
-                Auto-Complete
-              </button>
-            )}
+        {canAutoComplete && (
+          <div className="klondike-header">
+            <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
+              Auto-Complete
+            </button>
           </div>
-        </div>
+        )}
 
         {/* Top row */}
         <div className="klondike-top-row" style={{ position: 'relative' }}>
           <StockPile cards={state.stock} canRecycle={canRecycleStock} onStockClick={onStockClick} />
 
           {state.status === 'won'
-            ? <span className="win-inline">You Win</span>
+            ? <span className="win-inline">You Win!</span>
             : <WastePile
                 cards={state.waste}
                 drawMode={state.drawMode}
-                selection={selection}
+                wasteBatchSize={state.wasteBatchSize}
                 dragSource={dragSource}
                 onCardClick={onCardClick}
                 onCardDoubleClick={onCardDoubleClick}
@@ -130,7 +124,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
                 key={i}
                 index={i}
                 cards={pile}
-                selection={selection}
                 dragSource={dragSource}
                 isDragOver={isFoundationDragOver(i)}
                 onCardClick={handleFoundationCardClick}
@@ -149,7 +142,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
               key={i}
               pileIndex={i}
               cards={pile}
-              selection={selection}
               dragSource={dragSource}
               isDragOver={isTableauDragOver(i)}
               onCardClick={onCardClick}
@@ -168,7 +160,6 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
             <CardView
               key={card.id}
               card={card}
-              isSelected={false}
               isDragSource={false}
               style={{
                 position: i === 0 ? 'relative' : 'absolute',
@@ -183,12 +174,13 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
 
       {showOptions && (
         <OptionsDialog
-          drawMode={pendingDrawMode}
-          scoringMode={pendingScoringMode}
+          drawMode={state.drawMode}
+          scoringMode={state.scoringMode}
           cardSize={cardSize}
           onConfirm={handleConfirmOptions}
-          onResetWinnings={() => {
-            startNewGame(Date.now(), pendingDrawMode, pendingScoringMode, 0);
+          onResetWinnings={(drawMode, scoringMode) => {
+            startNewGame(Date.now(), drawMode, scoringMode, 0);
+            saveSettings({ drawMode, scoringMode, cardSize });
             setShowOptions(false);
           }}
           onClose={() => setShowOptions(false)}

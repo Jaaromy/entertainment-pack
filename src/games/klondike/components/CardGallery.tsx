@@ -71,6 +71,7 @@ function CardSlot({ card }: { card: Card }) {
       <CardView
         card={card}
         isDragSource={false}
+        draggable={false}
         style={{ position: 'absolute', top: 0, left: 0 }}
       />
     </div>
