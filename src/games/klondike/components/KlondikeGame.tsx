@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type { DrawMode, ScoringMode, CardLocation } from '../types';
 import { useKlondike } from '../hooks/useKlondike';
 import { loadSettings, saveSettings } from '../storage';
@@ -16,19 +16,43 @@ interface KlondikeGameProps {
   onHome?: () => void;
 }
 
+// Set or clear inline opacity on drag source cards before/after React re-renders.
+// For tableau: hiding applies only from the grabbed card onward; restoring clears all
+// cards in the pile (safe, since only the dragged subset was set).
+function setDragSourceOpacity(
+  sourceEl: HTMLElement,
+  loc: CardLocation,
+  opacity: '' | '0',
+): void {
+  if (loc.area === 'tableau') {
+    const pileEl = sourceEl.closest('.tableau-pile');
+    if (pileEl) {
+      if (opacity === '0') {
+        const cardEls = Array.from(pileEl.querySelectorAll<HTMLElement>('.card'));
+        const idx = cardEls.indexOf(sourceEl);
+        if (idx >= 0) cardEls.slice(idx).forEach(el => { el.style.opacity = opacity; });
+      } else {
+        pileEl.querySelectorAll<HTMLElement>('.card').forEach(el => { el.style.opacity = opacity; });
+      }
+    }
+  } else {
+    sourceEl.style.opacity = opacity;
+  }
+}
+
 export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) {
   const {
     state,
     canUndo,
     canRecycleStock,
     dragSource,
-    ghostPos,
-    ghostCards,
     onStockClick,
     onCardClick,
     onCardDoubleClick,
     onEmptyPileClick,
-    onPointerDown,
+    onPointerDragStart,
+    onDragEnd,
+    onDrop,
     doUndo,
     startNewGame,
     canAutoComplete,
@@ -39,6 +63,90 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
   const [cardSize, setCardSize] = useState<'normal' | 'large'>(
     () => loadSettings()?.cardSize ?? 'large'
   );
+
+  const dragPreviewRef = useRef<HTMLDivElement>(null);
+
+  const handleCardPointerDown = useCallback((
+    loc: CardLocation,
+    e: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    const sourceEl = e.currentTarget;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const offsetX = e.nativeEvent.offsetX;
+    const offsetY = e.nativeEvent.offsetY;
+    const { width: CARD_W, height: CARD_H } = sourceEl.getBoundingClientRect();
+    let dragging = false;
+
+    const handleMove = (me: PointerEvent) => {
+      if (!dragging) {
+        const dx = me.clientX - startX;
+        const dy = me.clientY - startY;
+        if (dx * dx + dy * dy < 25) return;
+        dragging = true;
+        setDragSourceOpacity(sourceEl, loc, '0');
+        onPointerDragStart(loc);
+      }
+      const el = dragPreviewRef.current;
+      if (el) {
+        el.style.transform = `translate(${me.clientX - offsetX}px, ${me.clientY - offsetY}px)`;
+        el.style.display = 'block';
+      }
+    };
+
+    const handleUp = (ue: PointerEvent) => {
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
+
+      if (!dragging) return;
+
+      const releaseX = ue.clientX;
+      const releaseY = ue.clientY;
+      const suppressDragClick = (ce: MouseEvent) => {
+        document.removeEventListener('click', suppressDragClick, { capture: true });
+        const dx = ce.clientX - releaseX;
+        const dy = ce.clientY - releaseY;
+        if (dx * dx + dy * dy < 100) ce.stopImmediatePropagation();
+      };
+      document.addEventListener('click', suppressDragClick, { capture: true });
+      setTimeout(() => document.removeEventListener('click', suppressDragClick, { capture: true }), 300);
+
+      if (dragPreviewRef.current) dragPreviewRef.current.style.display = 'none';
+      setDragSourceOpacity(sourceEl, loc, '');
+
+      const cardLeft  = ue.clientX - offsetX;
+      const cardTop   = ue.clientY - offsetY;
+      const cardRight  = cardLeft + CARD_W;
+      const cardBottom = cardTop  + CARD_H;
+
+      let bestArea: 'tableau' | 'foundation' | null = null;
+      let bestPile = -1;
+      let bestOverlap = 0;
+
+      const pileElements = document.querySelectorAll<HTMLElement>('[data-drop-area]');
+      for (const el of pileElements) {
+        const rect = el.getBoundingClientRect();
+        const overlapX = Math.min(cardRight, rect.right)  - Math.max(cardLeft, rect.left);
+        const overlapY = Math.min(cardBottom, rect.bottom) - Math.max(cardTop,  rect.top);
+        if (overlapX > 0 && overlapY > 0) {
+          const overlap = overlapX * overlapY;
+          if (overlap > bestOverlap) {
+            bestOverlap = overlap;
+            bestArea = el.dataset.dropArea as 'tableau' | 'foundation';
+            bestPile = parseInt(el.dataset.dropPile!);
+          }
+        }
+      }
+
+      if (bestArea !== null) onDrop(bestArea, bestPile);
+      onDragEnd();
+    };
+
+    document.addEventListener('pointermove', handleMove);
+    document.addEventListener('pointerup', handleUp);
+  }, [onPointerDragStart, onDrop, onDragEnd]);
 
   const handleDeal = () => {
     startNewGame(Date.now(), state.drawMode, state.scoringMode);
@@ -105,7 +213,7 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
                 dragSource={dragSource}
                 onCardClick={onCardClick}
                 onCardDoubleClick={onCardDoubleClick}
-                onPointerDown={onPointerDown}
+                onPointerDown={handleCardPointerDown}
               />
           }
 
@@ -121,7 +229,7 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
                 onCardClick={handleFoundationCardClick}
                 onCardDoubleClick={handleFoundationDoubleClick}
                 onEmptyPileClick={handleFoundationEmptyClick}
-                onPointerDown={onPointerDown}
+                onPointerDown={handleCardPointerDown}
               />
             ))}
           </div>
@@ -138,28 +246,35 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
               onCardClick={onCardClick}
               onCardDoubleClick={onCardDoubleClick}
               onEmptyPileClick={onEmptyPileClick}
-              onPointerDown={onPointerDown}
+              onPointerDown={handleCardPointerDown}
             />
           ))}
         </div>
 
-      {ghostPos && ghostCards && ghostCards.length > 0 && (
-        <div className="drag-ghost" style={{ left: ghostPos.x, top: ghostPos.y }}>
-          {ghostCards.map((card, i) => (
-            <CardView
-              key={card.id}
-              card={card}
-              isDragSource={false}
-              style={{
-                position: i === 0 ? 'relative' : 'absolute',
-                top: i === 0 ? 0 : i * 22,
-                left: 0,
-                zIndex: i,
-              }}
-            />
-          ))}
-        </div>
-      )}
+        {/* Drag preview — position updated via ref, zero re-renders on pointermove */}
+        {dragSource && (
+          <div
+            ref={dragPreviewRef}
+            style={{
+              display: 'none',
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              pointerEvents: 'none',
+              zIndex: 9999,
+              willChange: 'transform',
+            }}
+          >
+            {dragSource.cards.map((card, i) => (
+              <CardView
+                key={card.id}
+                card={card}
+                isDragSource={false}
+                style={{ position: 'absolute', top: i * 22, left: 0 }}
+              />
+            ))}
+          </div>
+        )}
 
       </div>{/* end .klondike-board */}
 

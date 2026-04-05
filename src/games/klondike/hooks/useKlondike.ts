@@ -34,13 +34,13 @@ interface UseKlondikeReturn {
   canRecycleStock: boolean;
   selection: Selection | null;
   dragSource: DragSource | null;
-  ghostPos: { x: number; y: number } | null;
-  ghostCards: Card[] | null;
   onStockClick: () => void;
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'foundation' | 'tableau', pile: number) => void;
-  onPointerDown: (loc: CardLocation, e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerDragStart: (loc: CardLocation) => void;
+  onDragEnd: () => void;
+  onDrop: (area: 'foundation' | 'tableau', pile: number) => void;
   doUndo: () => void;
   startNewGame: (seed: number, drawMode: DrawMode, scoringMode: ScoringMode, overridePot?: number) => void;
   canAutoComplete: boolean;
@@ -135,31 +135,15 @@ export function useKlondike(): UseKlondikeReturn {
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
-  const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
-  const [ghostCards, setGhostCards] = useState<Card[] | null>(null);
 
   const state = currentState(gwh);
   // Always-current refs so callbacks without these in deps can read latest values
   const stateRef = useRef(state);
   stateRef.current = state;
+  const dragSourceRef = useRef(dragSource);
+  dragSourceRef.current = dragSource;
   // Guard against recording the same win twice (React StrictMode double-invoke)
   const winRecordedRef = useRef(false);
-
-  // Ref so the global pointer handlers can call commit without stale closure
-  const commitFnRef = useRef<(s: GameState | null) => boolean>(() => false);
-
-  // Pointer drag tracking (mutable, not React state — avoids re-render overhead)
-  const pointerDragRef = useRef<{
-    loc: CardLocation;
-    cards: Card[];
-    startX: number;
-    startY: number;
-    isDragging: boolean;
-    dragOver: { area: string; pile: number } | null;
-  } | null>(null);
-
-  // Suppresses the click event that fires after a completed pointer drag
-  const suppressNextClickRef = useRef(false);
 
   const commit = useCallback((newState: GameState | null) => {
     if (!newState) return false;
@@ -170,79 +154,7 @@ export function useKlondike(): UseKlondikeReturn {
     return true;
   }, []);
 
-  // Keep commitFnRef in sync so the useEffect handlers always call the latest version
-  commitFnRef.current = commit;
-
-  // ── Global pointer-event handlers (registered once on mount) ──────────────
-  useEffect(() => {
-    const handleMove = (e: PointerEvent) => {
-      const drag = pointerDragRef.current;
-      if (!drag) return;
-
-      const dx = e.clientX - drag.startX;
-      const dy = e.clientY - drag.startY;
-
-      if (!drag.isDragging && Math.hypot(dx, dy) > 6) {
-        drag.isDragging = true;
-        setDragSource({ loc: drag.loc, cards: drag.cards });
-        setGhostCards(drag.cards);
-      }
-
-      if (drag.isDragging) {
-        setGhostPos({ x: e.clientX, y: e.clientY });
-
-        // Ghost has pointer-events:none so elementFromPoint sees through it
-        const el = document.elementFromPoint(e.clientX, e.clientY);
-        const dropEl = (el as HTMLElement | null)?.closest('[data-drop-area]') as HTMLElement | null;
-        if (dropEl) {
-          const area = dropEl.dataset.dropArea!;
-          const pile = parseInt(dropEl.dataset.dropPile ?? '0', 10);
-          drag.dragOver = { area, pile };
-        } else {
-          drag.dragOver = null;
-        }
-      }
-    };
-
-    const handleUp = () => {
-      const drag = pointerDragRef.current;
-      if (!drag) return;
-
-      if (drag.isDragging) {
-        suppressNextClickRef.current = true;
-
-        if (drag.dragOver) {
-          const { area, pile } = drag.dragOver;
-          const st = stateRef.current;
-          const src = drag.loc;
-
-          if (area === 'foundation') {
-            if (src.area === 'waste') commitFnRef.current(moveWasteToFoundation(st, pile));
-            else if (src.area === 'tableau') commitFnRef.current(moveTableauToFoundation(st, src.pile, pile));
-          } else if (area === 'tableau') {
-            if (src.area === 'waste') commitFnRef.current(moveWasteToTableau(st, pile));
-            else if (src.area === 'tableau') commitFnRef.current(moveTableauToTableau(st, src.pile, src.cardIndex, pile));
-            else if (src.area === 'foundation') commitFnRef.current(moveFoundationToTableau(st, src.pile, pile));
-          }
-        }
-      }
-
-      pointerDragRef.current = null;
-      setDragSource(null);
-      setGhostPos(null);
-      setGhostCards(null);
-    };
-
-    document.addEventListener('pointermove', handleMove);
-    document.addEventListener('pointerup', handleUp);
-    return () => {
-      document.removeEventListener('pointermove', handleMove);
-      document.removeEventListener('pointerup', handleUp);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const onStockClick = useCallback(() => {
-    if (suppressNextClickRef.current) { suppressNextClickRef.current = false; return; }
     setSelection(null);
     const drawn = drawFromStock(state);
     if (drawn) {
@@ -261,7 +173,6 @@ export function useKlondike(): UseKlondikeReturn {
   }, [state, commit]);
 
   const onCardClick = useCallback((loc: CardLocation) => {
-    if (suppressNextClickRef.current) { suppressNextClickRef.current = false; return; }
     // Face-down tableau card: only the top card can be flipped by clicking
     if (loc.area === 'tableau') {
       const pile = state.tableau[loc.pile];
@@ -350,30 +261,30 @@ export function useKlondike(): UseKlondikeReturn {
   }, [state, commit]);
 
   const onEmptyPileClick = useCallback((area: 'foundation' | 'tableau', pile: number) => {
-    if (suppressNextClickRef.current) { suppressNextClickRef.current = false; return; }
     if (!selection) return;
     tryMoveSelectionTo(selection, area, pile);
   }, [selection, tryMoveSelectionTo]);
 
-  const onPointerDown = useCallback((loc: CardLocation, e: React.PointerEvent<HTMLDivElement>) => {
-    // Only handle primary button; ignore right-click on desktop
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-
-    const st = stateRef.current;
-    const cards = getCardsAtLocation(st, loc);
+  const onPointerDragStart = useCallback((loc: CardLocation) => {
+    const cards = getCardsAtLocation(stateRef.current, loc);
     if (cards.length === 0) return;
     if (loc.area === 'tableau') {
-      const card = st.tableau[loc.pile]?.[loc.cardIndex];
+      const card = stateRef.current.tableau[loc.pile]?.[loc.cardIndex];
       if (!card?.faceUp) return;
     }
-
-    pointerDragRef.current = {
-      loc, cards,
-      startX: e.clientX, startY: e.clientY,
-      isDragging: false,
-      dragOver: null,
-    };
+    setDragSource({ loc, cards });
   }, []);
+
+  const onDragEnd = useCallback(() => {
+    setDragSource(null);
+  }, []);
+
+  const onDrop = useCallback((area: 'foundation' | 'tableau', pile: number) => {
+    const ds = dragSourceRef.current;
+    if (!ds) return;
+    commit(attemptMove(stateRef.current, ds.loc, area, pile));
+    setDragSource(null);
+  }, [commit]);
 
   const doUndo = useCallback(() => {
     setSelection(null);
@@ -411,8 +322,6 @@ export function useKlondike(): UseKlondikeReturn {
     winRecordedRef.current = false;
     setSelection(null);
     setDragSource(null);
-    setGhostPos(null);
-    setGhostCards(null);
     const newGwh = createGame(seed, drawMode, scoringMode, initialScore);
     saveGame(currentState(newGwh));
     setGwh(newGwh);
@@ -432,13 +341,13 @@ export function useKlondike(): UseKlondikeReturn {
     canRecycleStock: checkCanRecycleStock(state),
     selection,
     dragSource,
-    ghostPos,
-    ghostCards,
     onStockClick,
     onCardClick,
     onCardDoubleClick,
     onEmptyPileClick,
-    onPointerDown,
+    onPointerDragStart,
+    onDragEnd,
+    onDrop,
     doUndo,
     startNewGame,
     canAutoComplete: checkCanAutoComplete(state),

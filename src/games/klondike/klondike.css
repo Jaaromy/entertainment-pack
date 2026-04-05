@@ -247,14 +247,6 @@
   touch-action: none;
 }
 
-/* Ghost card rendered during pointer drag */
-.drag-ghost {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  transform: translate(-50%, -40%);
-}
-
 
 /* =========================================================
    Stock pile
