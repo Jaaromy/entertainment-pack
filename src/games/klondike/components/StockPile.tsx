@@ -29,7 +29,6 @@ export default function StockPile({ cards, canRecycle, onStockClick }: StockPile
       <CardView
         card={topCard}
         isDragSource={false}
-        draggable={false}
         style={{ position: 'relative' }}
       />
       <span className="stock-count">{cards.length}</span>

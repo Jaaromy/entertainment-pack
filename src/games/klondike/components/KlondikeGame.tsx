@@ -13,14 +13,14 @@ import '../klondike.css';
 
 interface KlondikeGameProps {
   onNavigate: (view: 'stats' | 'gallery') => void;
+  onHome?: () => void;
 }
 
-export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
+export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) {
   const {
     state,
     canUndo,
     canRecycleStock,
-    forceWin,
     selection,
     dragSource,
     dragOverTarget,
@@ -90,6 +90,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
           onOptions={() => setShowOptions(true)}
           onStats={() => onNavigate('stats')}
           onGallery={() => onNavigate('gallery')}
+          onHome={onHome}
         />
 
         {/* Header */}
@@ -99,11 +100,6 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
             {canAutoComplete && (
               <button className="klondike-btn klondike-btn--autocomplete" onClick={doAutoComplete}>
                 Auto-Complete
-              </button>
-            )}
-            {forceWin && (
-              <button className="klondike-btn" onClick={forceWin} style={{ opacity: 0.5 }}>
-                Force Win
               </button>
             )}
           </div>

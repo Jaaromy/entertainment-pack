@@ -3,7 +3,7 @@ import { cardFaceStyle } from '../spriteSheet';
 
 interface CardViewProps {
   card: Card;
-  isSelected: boolean;
+  isSelected?: boolean;
   isDragSource: boolean;
   style?: React.CSSProperties;
   onClick?: (e: React.MouseEvent) => void;

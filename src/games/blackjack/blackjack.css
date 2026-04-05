@@ -5,13 +5,14 @@
    ========================================================= */
 
 .bj-game {
-  --card-w: 72px;
-  --card-h: 100px;
+  /* Card width shrinks on narrow screens; max 5 cards shown side by side (split hand) */
+  --card-w: min(72px, calc((100vw - 32px) / 5));
+  --card-h: calc(var(--card-w) * 100 / 72);
 }
 
 .bj-game--large {
-  --card-w: 96px;
-  --card-h: 134px;
+  --card-w: min(96px, calc((100vw - 32px) / 5));
+  --card-h: calc(var(--card-w) * 100 / 72);
 }
 
 /* =========================================================
@@ -23,6 +24,7 @@
   overflow: hidden;
   background: #007800;
   user-select: none;
+  touch-action: manipulation;
   display: flex;
   flex-direction: column;
   padding: 12px 16px 0;

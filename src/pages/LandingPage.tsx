@@ -80,6 +80,7 @@ export default function LandingPage({ onSelect }: LandingPageProps) {
       justifyContent: 'center',
       padding: '32px 16px',
       gap: 32,
+      touchAction: 'manipulation',
     }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{
