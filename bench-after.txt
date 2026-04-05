@@ -1,0 +1,22 @@
+Benchmarking is an experimental feature.
+Breaking changes might not follow SemVer, please pin Vitest's version when using it.
+
+ RUN  v3.2.4 /Users/jaaromyzierse/git/entertainment-pack
+
+
+ ✓ src/games/klondike/__tests__/gameLogic.bench.ts > hot paths 16016ms
+     name                                       hz     min     max    mean     p75     p99    p995    p999     rme   samples
+   · canPlaceOnFoundation – valid    22,071,835.03  0.0000  0.2314  0.0000  0.0000  0.0001  0.0001  0.0001  ±0.16%  11035918
+   · canPlaceOnFoundation – invalid  21,902,118.51  0.0000  0.4200  0.0000  0.0000  0.0001  0.0001  0.0001  ±0.48%  10951060
+   · canPlaceOnTableau – valid       16,796,545.80  0.0000  0.1807  0.0001  0.0001  0.0001  0.0001  0.0001  ±0.18%   8398273
+   · canPlaceOnTableau – invalid     17,039,960.94  0.0000  0.2970  0.0001  0.0001  0.0001  0.0001  0.0001  ±0.25%   8519981
+   · autoMoveToFoundation (seed 42)   2,617,277.97  0.0002  0.7783  0.0004  0.0004  0.0005  0.0007  0.0011  ±1.54%   1308639
+
+ BENCH  Summary
+
+  canPlaceOnFoundation – valid - src/games/klondike/__tests__/gameLogic.bench.ts > hot paths
+    1.01x faster than canPlaceOnFoundation – invalid
+    1.30x faster than canPlaceOnTableau – invalid
+    1.31x faster than canPlaceOnTableau – valid
+    8.43x faster than autoMoveToFoundation (seed 42)
+

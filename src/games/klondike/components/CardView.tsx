@@ -5,24 +5,20 @@ interface CardViewProps {
   card: Card;
   isSelected: boolean;
   isDragSource: boolean;
-  draggable?: boolean;
   style?: React.CSSProperties;
   onClick?: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
-  onDragStart?: (e: React.DragEvent) => void;
-  onDragEnd?: (e: React.DragEvent) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
 }
 
 export default function CardView({
   card,
   isSelected,
   isDragSource,
-  draggable = false,
   style,
   onClick,
   onDoubleClick,
-  onDragStart,
-  onDragEnd,
+  onPointerDown,
 }: CardViewProps) {
   const classes = [
     'card',
@@ -39,11 +35,9 @@ export default function CardView({
     <div
       className={classes}
       style={faceStyle ? { ...faceStyle, ...style } : style}
-      draggable={draggable && card.faceUp}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onPointerDown={onPointerDown}
     />
   );
 }

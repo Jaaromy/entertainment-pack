@@ -11,10 +11,7 @@ interface FoundationPileProps {
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'foundation', pile: number) => void;
-  onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
-  onDragEnd: () => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (area: 'foundation', pile: number) => void;
+  onPointerDown: (loc: CardLocation, e: React.PointerEvent) => void;
 }
 
 export default function FoundationPile({
@@ -26,33 +23,20 @@ export default function FoundationPile({
   onCardClick,
   onCardDoubleClick,
   onEmptyPileClick,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDrop,
+  onPointerDown,
 }: FoundationPileProps) {
   const loc: CardLocation = { area: 'foundation', pile: index };
   const isSelected = selection?.location.area === 'foundation' && selection.location.pile === index;
   const isDragSrc = dragSource?.loc.area === 'foundation' && dragSource.loc.pile === index;
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    onDragOver(e);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    onDrop('foundation', index);
-  };
-
   if (cards.length === 0) {
     return (
       <div
         className={`foundation-pile pile-slot${isDragOver ? ' pile-slot--drag-over' : ''}`}
+        data-drop-area="foundation"
+        data-drop-pile={index}
         style={emptySlotStyle}
         onClick={() => onEmptyPileClick('foundation', index)}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
       />
     );
   }
@@ -62,20 +46,18 @@ export default function FoundationPile({
   return (
     <div
       className={`foundation-pile${isDragOver ? ' pile-slot--drag-over' : ''}`}
+      data-drop-area="foundation"
+      data-drop-pile={index}
       style={{ borderRadius: 7, border: isDragOver ? '2px solid #ffd600' : undefined }}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
     >
       <CardView
         card={top}
         isSelected={isSelected}
         isDragSource={isDragSrc}
-        draggable
         style={{ position: 'relative' }}
         onClick={() => onCardClick(loc)}
         onDoubleClick={() => onCardDoubleClick(loc)}
-        onDragStart={e => onDragStart(loc, e)}
-        onDragEnd={onDragEnd}
+        onPointerDown={e => onPointerDown(loc, e)}
       />
     </div>
   );

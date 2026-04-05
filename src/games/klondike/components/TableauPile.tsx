@@ -11,10 +11,7 @@ interface TableauPileProps {
   onCardClick: (loc: CardLocation) => void;
   onCardDoubleClick: (loc: CardLocation) => void;
   onEmptyPileClick: (area: 'tableau', pile: number) => void;
-  onDragStart: (loc: CardLocation, e: React.DragEvent) => void;
-  onDragEnd: () => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (area: 'tableau', pile: number) => void;
+  onPointerDown: (loc: CardLocation, e: React.PointerEvent) => void;
 }
 
 function isCardSelected(
@@ -50,10 +47,7 @@ export default function TableauPile({
   onCardClick,
   onCardDoubleClick,
   onEmptyPileClick,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDrop,
+  onPointerDown,
 }: TableauPileProps) {
   // Calculate heights
   let totalOffset = 0;
@@ -67,24 +61,14 @@ export default function TableauPile({
   }
   const containerHeight = cards.length === 0 ? 100 : totalOffset + 100;
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    onDragOver(e);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    onDrop('tableau', pileIndex);
-  };
-
   if (cards.length === 0) {
     return (
       <div
         className={`tableau-pile pile-slot${isDragOver ? ' pile-slot--drag-over' : ''}`}
+        data-drop-area="tableau"
+        data-drop-pile={pileIndex}
         style={emptySlotStyle}
         onClick={() => onEmptyPileClick('tableau', pileIndex)}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
       />
     );
   }
@@ -92,11 +76,10 @@ export default function TableauPile({
   return (
     <div
       className="tableau-pile"
+      data-drop-area="tableau"
+      data-drop-pile={pileIndex}
       style={{ height: containerHeight }}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
     >
-      {/* Drop zone overlay at the bottom for empty-pile drops when dragging over a pile */}
       {isDragOver && (
         <div
           style={{
@@ -120,7 +103,6 @@ export default function TableauPile({
             card={card}
             isSelected={sel}
             isDragSource={isDragSrc}
-            draggable={card.faceUp}
             style={{
               position: 'absolute',
               top: offsets[i],
@@ -129,8 +111,7 @@ export default function TableauPile({
             }}
             onClick={() => onCardClick(loc)}
             onDoubleClick={() => onCardDoubleClick(loc)}
-            onDragStart={e => onDragStart(loc, e)}
-            onDragEnd={onDragEnd}
+            onPointerDown={e => onPointerDown(loc, e)}
           />
         );
       })}

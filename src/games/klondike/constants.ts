@@ -1,16 +1,4 @@
-import type { Suit, Rank } from './types';
-
-export const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
-export const RANKS: Rank[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
-
-export const SUIT_SYMBOL: Record<Suit, string> = {
-  spades: '♠',
-  hearts: '♥',
-  diamonds: '♦',
-  clubs: '♣',
-};
-
-export const RED_SUITS: Suit[] = ['hearts', 'diamonds'];
+export { SUITS, RANKS, SUIT_SYMBOL, RED_SUITS } from '../../shared/constants';
 
 // ---- Standard scoring (Windows Solitaire style) ----
 /** Waste → Tableau */

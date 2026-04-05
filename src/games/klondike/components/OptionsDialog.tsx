@@ -6,8 +6,36 @@ interface OptionsDialogProps {
   scoringMode: ScoringMode;
   cardSize: 'normal' | 'large';
   onConfirm: (drawMode: DrawMode, scoringMode: ScoringMode, cardSize: 'normal' | 'large') => void;
-  onResetWinnings: () => void;
+  onResetWinnings: (drawMode: DrawMode, scoringMode: ScoringMode) => void;
   onClose: () => void;
+}
+
+function RadioGroup<T extends string | number>({
+  name,
+  value,
+  onChange,
+  options,
+}: {
+  name: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="dialog-radio-group">
+      {options.map((opt) => (
+        <label key={String(opt.value)}>
+          <input
+            type="radio"
+            name={name}
+            checked={value === opt.value}
+            onChange={() => onChange(opt.value)}
+          />
+          {opt.label}
+        </label>
+      ))}
+    </div>
+  );
 }
 
 export default function OptionsDialog({ drawMode, scoringMode, cardSize, onConfirm, onResetWinnings, onClose }: OptionsDialogProps) {
@@ -22,48 +50,45 @@ export default function OptionsDialog({ drawMode, scoringMode, cardSize, onConfi
 
         <div className="dialog-field">
           <label>Draw Mode</label>
-          <div className="dialog-radio-group">
-            <label>
-              <input type="radio" name="drawMode" checked={dm === 1} onChange={() => setDm(1)} />
-              Draw 1
-            </label>
-            <label>
-              <input type="radio" name="drawMode" checked={dm === 3} onChange={() => setDm(3)} />
-              Draw 3
-            </label>
-          </div>
+          <RadioGroup<DrawMode>
+            name="drawMode"
+            value={dm}
+            onChange={setDm}
+            options={[
+              { value: 1, label: 'Draw 1' },
+              { value: 3, label: 'Draw 3' },
+            ]}
+          />
         </div>
 
         <div className="dialog-field">
           <label>Scoring</label>
-          <div className="dialog-radio-group">
-            <label>
-              <input type="radio" name="scoringMode" checked={sm === 'standard'} onChange={() => setSm('standard')} />
-              Standard
-            </label>
-            <label>
-              <input type="radio" name="scoringMode" checked={sm === 'vegas'} onChange={() => setSm('vegas')} />
-              Vegas
-            </label>
-          </div>
+          <RadioGroup<ScoringMode>
+            name="scoringMode"
+            value={sm}
+            onChange={setSm}
+            options={[
+              { value: 'standard', label: 'Standard' },
+              { value: 'vegas', label: 'Vegas' },
+            ]}
+          />
         </div>
 
         <div className="dialog-field">
           <label>Card Size</label>
-          <div className="dialog-radio-group">
-            <label>
-              <input type="radio" name="cardSize" checked={cs === 'normal'} onChange={() => setCs('normal')} />
-              Normal
-            </label>
-            <label>
-              <input type="radio" name="cardSize" checked={cs === 'large'} onChange={() => setCs('large')} />
-              Large
-            </label>
-          </div>
+          <RadioGroup<'normal' | 'large'>
+            name="cardSize"
+            value={cs}
+            onChange={setCs}
+            options={[
+              { value: 'normal', label: 'Normal' },
+              { value: 'large', label: 'Large' },
+            ]}
+          />
         </div>
 
         <div className="dialog-actions">
-          <button className="klondike-btn" onClick={onResetWinnings}>Reset Winnings</button>
+          <button className="klondike-btn" onClick={() => onResetWinnings(dm, sm)}>Reset Winnings</button>
           <button className="klondike-btn" onClick={onClose}>Cancel</button>
           <button className="klondike-btn klondike-btn--primary" onClick={() => onConfirm(dm, sm, cs)}>
             OK

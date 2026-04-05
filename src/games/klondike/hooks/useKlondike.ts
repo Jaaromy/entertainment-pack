@@ -8,6 +8,7 @@ import {
   moveTableauToFoundation,
   moveTableauToTableau,
   moveFoundationToTableau,
+  flipTableauCard,
   findFoundationTarget,
   autoMoveToFoundation,
 } from '../gameLogic';
@@ -31,7 +32,6 @@ interface UseKlondikeReturn {
   state: GameState;
   canUndo: boolean;
   canRecycleStock: boolean;
-  forceWin: (() => void) | null;
   selection: Selection | null;
   dragSource: DragSource | null;
   dragOverTarget: { area: string; pile: number } | null;
@@ -95,11 +95,34 @@ function checkCanAutoComplete(state: GameState): boolean {
   return true;
 }
 
+/**
+ * Dispatch a card move from `src` to (`destArea`, `destPile`).
+ * Returns the new GameState, or null if the move is illegal.
+ */
+function attemptMove(
+  state: GameState,
+  src: CardLocation,
+  destArea: 'foundation' | 'tableau',
+  destPile: number,
+): GameState | null {
+  if (destArea === 'foundation') {
+    if (src.area === 'waste')   return moveWasteToFoundation(state, destPile);
+    if (src.area === 'tableau') return moveTableauToFoundation(state, src.pile, destPile);
+    return null; // foundation → foundation: no-op
+  }
+  // destArea === 'tableau'
+  if (src.area === 'waste')      return moveWasteToTableau(state, destPile);
+  if (src.area === 'tableau')    return moveTableauToTableau(state, src.pile, src.cardIndex, destPile);
+  if (src.area === 'foundation') return moveFoundationToTableau(state, src.pile, destPile);
+  return null;
+}
+
 export function useKlondike(): UseKlondikeReturn {
   const [gwh, setGwh] = useState<GameWithHistory>(() => {
     const saved = loadGame();
     if (saved?.status === 'playing') {
-      return { states: [saved], index: 0 };
+      const state = { ...saved, wasteBatchSize: saved.wasteBatchSize ?? 0 };
+      return { states: [state], index: 0 };
     }
     const settings = loadSettings();
     const drawMode = settings?.drawMode ?? 3;
@@ -107,7 +130,9 @@ export function useKlondike(): UseKlondikeReturn {
     const initialScore = scoringMode === 'vegas'
       ? loadVegasPot() + VEGAS_INITIAL_BET
       : undefined;
-    return createGame(Date.now(), drawMode, scoringMode, initialScore);
+    const newGwh = createGame(Date.now(), drawMode, scoringMode, initialScore);
+    saveGame(currentState(newGwh));
+    return newGwh;
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [dragSource, setDragSource] = useState<DragSource | null>(null);
@@ -116,8 +141,10 @@ export function useKlondike(): UseKlondikeReturn {
   const [ghostCards, setGhostCards] = useState<Card[] | null>(null);
 
   const state = currentState(gwh);
+  // Always-current refs so callbacks without these in deps can read latest values
   const stateRef = useRef(state);
   stateRef.current = state;
+  // Guard against recording the same win twice (React StrictMode double-invoke)
   const winRecordedRef = useRef(false);
 
   // Ref so the global pointer handlers can call commit without stale closure
@@ -235,31 +262,24 @@ export function useKlondike(): UseKlondikeReturn {
   const tryMoveSelectionTo = useCallback((
     sel: Selection,
     area: 'foundation' | 'tableau',
-    pile: number
+    pile: number,
   ): boolean => {
-    const src = sel.location;
-
-    if (area === 'foundation') {
-      if (src.area === 'waste') return commit(moveWasteToFoundation(state, pile));
-      if (src.area === 'tableau') return commit(moveTableauToFoundation(state, src.pile, pile));
-      if (src.area === 'foundation') return false;
-    }
-
-    if (area === 'tableau') {
-      if (src.area === 'waste') return commit(moveWasteToTableau(state, pile));
-      if (src.area === 'tableau') return commit(moveTableauToTableau(state, src.pile, src.cardIndex, pile));
-      if (src.area === 'foundation') return commit(moveFoundationToTableau(state, src.pile, pile));
-    }
-
-    return false;
+    return commit(attemptMove(state, sel.location, area, pile));
   }, [state, commit]);
 
   const onCardClick = useCallback((loc: CardLocation) => {
     if (suppressNextClickRef.current) { suppressNextClickRef.current = false; return; }
 
+    // Face-down tableau card: only the top card can be flipped by clicking
     if (loc.area === 'tableau') {
-      const card = state.tableau[loc.pile]?.[loc.cardIndex];
-      if (!card?.faceUp) return;
+      const pile = state.tableau[loc.pile];
+      const card = pile?.[loc.cardIndex];
+      if (!card?.faceUp) {
+        if (loc.cardIndex === (pile?.length ?? 0) - 1) {
+          commit(flipTableauCard(state, loc.pile));
+        }
+        return;
+      }
     }
 
     if (!selection) {
@@ -292,7 +312,7 @@ export function useKlondike(): UseKlondikeReturn {
     } else {
       setSelection(null);
     }
-  }, [selection, state, tryMoveSelectionTo]);
+  }, [selection, state, tryMoveSelectionTo, commit]);
 
   const onCardDoubleClick = useCallback((loc: CardLocation) => {
     setSelection(null);
@@ -371,17 +391,13 @@ export function useKlondike(): UseKlondikeReturn {
       initialScore = pot + VEGAS_INITIAL_BET;
     }
     saveSettings({ drawMode, scoringMode });
-    clearGame();
     winRecordedRef.current = false;
     setSelection(null);
     setDragSource(null);
-    setDragOverTarget(null);
-    setGwh(createGame(seed, drawMode, scoringMode, initialScore));
+    const newGwh = createGame(seed, drawMode, scoringMode, initialScore);
+    saveGame(currentState(newGwh));
+    setGwh(newGwh);
   }, []);
-
-  const forceWin = import.meta.env.DEV
-    ? () => commit({ ...stateRef.current, status: 'won' })
-    : null;
 
   const doAutoComplete = useCallback(() => {
     setSelection(null);
@@ -403,7 +419,6 @@ export function useKlondike(): UseKlondikeReturn {
     onCardDoubleClick,
     onEmptyPileClick,
     onPointerDown,
-    forceWin,
     doUndo,
     startNewGame,
     canAutoComplete: checkCanAutoComplete(state),

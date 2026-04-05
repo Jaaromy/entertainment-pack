@@ -8,9 +8,10 @@ interface MenuBarProps {
   onOptions: () => void;
   onStats: () => void;
   onGallery: () => void;
+  onHome?: () => void;
 }
 
-export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onStats, onGallery }: MenuBarProps) {
+export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onStats, onGallery, onHome }: MenuBarProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -32,6 +33,7 @@ export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onS
 
   return (
     <div className="menu-bar">
+      <div className="menu-bar-left">
       <div className="menu-bar-inner" ref={ref}>
         <button
           className={`menu-trigger${open ? ' menu-trigger--open' : ''}`}
@@ -42,14 +44,19 @@ export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onS
         {open && (
           <div className="menu-dropdown">
             <button className="menu-option" onClick={() => pick(onDeal)}>Deal</button>
-            <button className="menu-option" onClick={() => pick(onUndo)} disabled={!canUndo}>Undo</button>
             <div className="menu-divider" />
             <button className="menu-option" onClick={() => pick(onOptions)}>Options</button>
             <div className="menu-divider" />
             <button className="menu-option" onClick={() => pick(onStats)}>Stats</button>
             <button className="menu-option" onClick={() => pick(onGallery)}>Card Gallery</button>
+            {onHome && <>
+              <div className="menu-divider" />
+              <button className="menu-option" onClick={() => pick(onHome)}>All Games</button>
+            </>}
           </div>
         )}
+      </div>
+      <button className="menu-deal-button" onClick={onUndo} disabled={!canUndo}>Undo</button>
       </div>
       <span className="menu-score">{score}</span>
     </div>

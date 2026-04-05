@@ -1,0 +1,341 @@
+@import '../../shared/card.css';
+
+/* =========================================================
+   Blackjack — card size overrides
+   ========================================================= */
+
+.bj-game {
+  --card-w: 72px;
+  --card-h: 100px;
+}
+
+.bj-game--large {
+  --card-w: 96px;
+  --card-h: 134px;
+}
+
+/* =========================================================
+   Game container
+   ========================================================= */
+
+.bj-game {
+  height: 100vh;
+  overflow: hidden;
+  background: #007800;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 0;
+}
+
+/* =========================================================
+   Shoe tracker
+   ========================================================= */
+
+.bj-shoe-tracker {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.15);
+  margin: 0 12px;
+  overflow: hidden;
+}
+
+.bj-shoe-tracker__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.55);
+  transition: width 0.3s ease;
+}
+
+/* =========================================================
+   Table
+   ========================================================= */
+
+.bj-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px 12px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+/* =========================================================
+   Card area — expands to fill remaining vertical space
+   ========================================================= */
+
+.bj-cards-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 0;
+}
+
+/* =========================================================
+   Controls footer
+   ========================================================= */
+
+.bj-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding-bottom: 4px;
+}
+
+.bj-out-of-chips {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ff5a5a;
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   Hand zones
+   ========================================================= */
+
+.bj-hand-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.bj-hand-label {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bj-cards-row {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  height: var(--card-h);
+  min-width: var(--card-w);
+}
+
+.bj-card-wrapper {
+  position: relative;
+  margin-right: calc(var(--card-w) * 0.55);
+}
+
+.bj-card-wrapper:last-child {
+  margin-right: 0;
+}
+
+.bj-card-wrapper .card {
+  position: relative;
+}
+
+/* =========================================================
+   Player zone — supports split hands side by side
+   ========================================================= */
+
+.bj-player-zone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  width: 100%;
+}
+
+.bj-player-hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: border-color 0.15s;
+  background: rgba(0,0,0,0.15);
+}
+
+.bj-player-hand--active {
+  border-color: #ffd600;
+}
+
+.bj-hand-index {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.6);
+}
+
+.bj-hand-info {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.bj-hand-total {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.bj-hand-bet {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+}
+
+.bj-hand-result {
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+/* =========================================================
+   Betting panel
+   ========================================================= */
+
+.bj-betting-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bj-bet-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bj-bet-label {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bj-bet-amount {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  min-width: 60px;
+  text-align: center;
+}
+
+.bj-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.bj-chip {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s;
+}
+
+.bj-chip:hover:not(:disabled) {
+  background: rgba(255,255,255,0.25);
+  transform: scale(1.08);
+}
+
+.bj-chip:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.bj-bet-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* =========================================================
+   Action bar
+   ========================================================= */
+
+.bj-action-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* =========================================================
+   Round end
+   ========================================================= */
+
+.bj-round-end {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+
+.bj-btn {
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 9px 22px;
+  transition: background 0.12s, transform 0.1s;
+  border: 1px solid transparent;
+}
+
+.bj-btn:active {
+  transform: scale(0.97);
+}
+
+.bj-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.bj-btn--primary {
+  background: rgba(255,214,0,0.2);
+  border-color: #ffd600;
+  color: #ffd600;
+}
+
+.bj-btn--primary:hover:not(:disabled) {
+  background: rgba(255,214,0,0.35);
+}
+
+.bj-btn--secondary {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+
+.bj-btn--secondary:hover:not(:disabled) {
+  background: rgba(255,255,255,0.22);
+}
+
+.bj-btn--action {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+  min-width: 80px;
+}
+
+.bj-btn--action:hover:not(:disabled) {
+  background: rgba(255,255,255,0.28);
+}

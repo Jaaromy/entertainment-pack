@@ -6,6 +6,7 @@ import StockPile from './StockPile';
 import WastePile from './WastePile';
 import FoundationPile from './FoundationPile';
 import TableauPile from './TableauPile';
+import CardView from './CardView';
 import OptionsDialog from './OptionsDialog';
 import MenuBar from './MenuBar';
 import '../klondike.css';
@@ -23,14 +24,13 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
     selection,
     dragSource,
     dragOverTarget,
+    ghostPos,
+    ghostCards,
     onStockClick,
     onCardClick,
     onCardDoubleClick,
     onEmptyPileClick,
-    onDragStart,
-    onDragEnd,
-    onDragOver,
-    onDrop,
+    onPointerDown,
     doUndo,
     startNewGame,
     canAutoComplete,
@@ -72,16 +72,6 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
 
   const isTableauDragOver = (pile: number) =>
     dragOverTarget?.area === 'tableau' && dragOverTarget.pile === pile;
-
-  const makeFoundationDragOverHandler = (pile: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    onDragOver('foundation', pile);
-  };
-
-  const makeTableauDragOverHandler = (pile: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    onDragOver('tableau', pile);
-  };
 
   const handleFoundationCardClick = (loc: CardLocation) => onCardClick(loc);
   const handleFoundationDoubleClick = (loc: CardLocation) => onCardDoubleClick(loc);
@@ -132,8 +122,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
                 dragSource={dragSource}
                 onCardClick={onCardClick}
                 onCardDoubleClick={onCardDoubleClick}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
+                onPointerDown={onPointerDown}
               />
           }
 
@@ -151,10 +140,7 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
                 onCardClick={handleFoundationCardClick}
                 onCardDoubleClick={handleFoundationDoubleClick}
                 onEmptyPileClick={handleFoundationEmptyClick}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onDragOver={makeFoundationDragOverHandler(i)}
-                onDrop={onDrop}
+                onPointerDown={onPointerDown}
               />
             ))}
           </div>
@@ -173,15 +159,31 @@ export default function KlondikeGame({ onNavigate }: KlondikeGameProps) {
               onCardClick={onCardClick}
               onCardDoubleClick={onCardDoubleClick}
               onEmptyPileClick={onEmptyPileClick}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-              onDragOver={makeTableauDragOverHandler(i)}
-              onDrop={onDrop}
+              onPointerDown={onPointerDown}
             />
           ))}
         </div>
 
       </div>{/* end .klondike-board */}
+
+      {ghostPos && ghostCards && ghostCards.length > 0 && (
+        <div className="drag-ghost" style={{ left: ghostPos.x, top: ghostPos.y }}>
+          {ghostCards.map((card, i) => (
+            <CardView
+              key={card.id}
+              card={card}
+              isSelected={false}
+              isDragSource={false}
+              style={{
+                position: i === 0 ? 'relative' : 'absolute',
+                top: i === 0 ? 0 : i * 22,
+                left: 0,
+                zIndex: i,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {showOptions && (
         <OptionsDialog

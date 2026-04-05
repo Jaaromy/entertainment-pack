@@ -70,7 +70,6 @@ function CardSlot({ card }: { card: Card }) {
     <div style={{ position: 'relative', width: 72, height: 100, flexShrink: 0 }}>
       <CardView
         card={card}
-        isSelected={false}
         isDragSource={false}
         draggable={false}
         style={{ position: 'absolute', top: 0, left: 0 }}

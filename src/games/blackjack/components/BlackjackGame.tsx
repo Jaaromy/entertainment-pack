@@ -1,0 +1,134 @@
+import { useState } from 'react';
+import { useBlackjack } from '../hooks/useBlackjack';
+import BettingPanel from './BettingPanel';
+import DealerHand from './DealerHand';
+import PlayerHand from './PlayerHand';
+import ActionBar from './ActionBar';
+import BlackjackStatsScreen from './BlackjackStatsScreen';
+import BlackjackOptionsDialog from './BlackjackOptionsDialog';
+import '../blackjack.css';
+
+interface BlackjackGameProps {
+  onHome?: () => void;
+}
+
+export default function BlackjackGame({ onHome }: BlackjackGameProps) {
+  const {
+    state,
+    canUndoAction,
+    chipValues,
+    canSplitHand,
+    canDoubleDownHand,
+    isPlayerActive,
+    cardSize,
+    onPlaceBet,
+    onClearBet,
+    onDeal,
+    onHit,
+    onStand,
+    onDoubleDown,
+    onSplit,
+    onUndo,
+    onNewGame,
+    onSaveOptions,
+  } = useBlackjack();
+
+  const [view, setView] = useState<'game' | 'stats'>('game');
+  const [showOptions, setShowOptions] = useState(false);
+
+  if (view === 'stats') {
+    return (
+      <div className="bj-game">
+        <BlackjackStatsScreen onBack={() => setView('game')} />
+      </div>
+    );
+  }
+
+  const showDealerTotal = state.phase === 'settlement' || state.phase === 'dealer';
+  const isSettled = state.phase === 'settlement';
+  const isBetting = state.phase === 'betting';
+  const canDeal = (isBetting && state.currentBet > 0 && state.currentBet <= state.balance) || isSettled;
+
+  const scoreDisplay = `$${state.balance}`;
+
+  return (
+    <div className={`bj-game${cardSize === 'large' ? ' bj-game--large' : ''}`}>
+      {/* Menu bar */}
+      <div className="menu-bar">
+        <div className="menu-bar-left">
+          <button className="menu-deal-button" onClick={onUndo} disabled={!canUndoAction}>Undo</button>
+          <button className="menu-deal-button" onClick={() => setShowOptions(true)}>Options</button>
+          <button className="menu-deal-button" onClick={() => setView('stats')}>Stats</button>
+          {onHome && <button className="menu-deal-button" onClick={onHome}>All Games</button>}
+        </div>
+        <div className="bj-shoe-tracker">
+          <div
+            className="bj-shoe-tracker__fill"
+            style={{ width: `${100 - (state.dealtCount / state.shoeSize) * 100}%` }}
+          />
+        </div>
+        <span className="menu-score">{scoreDisplay}</span>
+      </div>
+
+      {/* Table */}
+      <div className="bj-table">
+        {/* Card area — grows to fill available space */}
+        <div className="bj-cards-area">
+          <DealerHand
+            dealerHand={state.dealerHand}
+            showTotal={showDealerTotal}
+          />
+          <div className="bj-player-zone">
+            {state.playerHands.map((hand, i) => (
+              <PlayerHand
+                key={i}
+                hand={hand}
+                isActive={state.phase === 'playing' && i === state.activeHandIndex}
+                index={i}
+                totalHands={state.playerHands.length}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Controls footer */}
+        <div className="bj-controls">
+          <BettingPanel
+            isActive={isBetting || isSettled}
+            canDeal={canDeal}
+            balance={state.balance}
+            currentBet={state.currentBet}
+            chipValues={chipValues}
+            onChipClick={onPlaceBet}
+            onClear={onClearBet}
+            onDeal={onDeal}
+          />
+          <ActionBar
+            isPlayerActive={isPlayerActive}
+            canSplit={canSplitHand}
+            canDoubleDown={canDoubleDownHand}
+            onHit={onHit}
+            onStand={onStand}
+            onDoubleDown={onDoubleDown}
+            onSplit={onSplit}
+          />
+          {state.balance === 0 && isSettled && (
+            <div className="bj-out-of-chips">
+              <span>Out of chips!</span>
+              <button className="bj-btn bj-btn--secondary" onClick={onNewGame}>Reset Balance</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showOptions && (
+        <BlackjackOptionsDialog
+          options={state.options}
+          cardSize={cardSize}
+          onConfirm={(opts, size) => { onSaveOptions(opts, size); setShowOptions(false); }}
+          onCancel={() => setShowOptions(false)}
+        />
+      )}
+    </div>
+  );
+}

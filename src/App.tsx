@@ -1,19 +1,36 @@
 import { useState } from 'react'
+import { useHashRoute } from './router/useHashRoute'
+import LandingPage from './pages/LandingPage'
 import KlondikeGame from './games/klondike/components/KlondikeGame'
 import CardGallery from './games/klondike/components/CardGallery'
 import StatsScreen from './games/klondike/components/StatsScreen'
+import BlackjackGame from './games/blackjack/components/BlackjackGame'
 import './games/klondike/klondike.css'
 
-type View = 'game' | 'stats' | 'gallery'
+type KlondikeView = 'game' | 'stats' | 'gallery'
 
 export default function App() {
-  const [view, setView] = useState<View>('game')
+  const { route, navigate } = useHashRoute()
+  const [klondikeView, setKlondikeView] = useState<KlondikeView>('game')
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#007800' }}>
-      {view === 'game' && <KlondikeGame onNavigate={setView} />}
-      {view === 'stats' && <StatsScreen onBack={() => setView('game')} />}
-      {view === 'gallery' && <CardGallery onBack={() => setView('game')} />}
-    </div>
-  )
+  if (route === '/klondike') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#007800' }}>
+        {klondikeView === 'game' && (
+          <KlondikeGame
+            onNavigate={(v) => setKlondikeView(v)}
+            onHome={() => { setKlondikeView('game'); navigate('/'); }}
+          />
+        )}
+        {klondikeView === 'stats' && <StatsScreen onBack={() => setKlondikeView('game')} />}
+        {klondikeView === 'gallery' && <CardGallery onBack={() => setKlondikeView('game')} />}
+      </div>
+    )
+  }
+
+  if (route === '/blackjack') {
+    return <BlackjackGame onHome={() => navigate('/')} />
+  }
+
+  return <LandingPage onSelect={navigate} />
 }
