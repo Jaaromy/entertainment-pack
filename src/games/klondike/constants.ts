@@ -1,4 +1,7 @@
-export { SUITS, RANKS, SUIT_SYMBOL, RED_SUITS } from '../../shared/constants';
+export {
+  SUITS, RANKS, SUIT_SYMBOL, RED_SUITS,
+  DRAG_START_THRESHOLD_SQ, DRAG_CLICK_SUPPRESS_RADIUS_SQ, DRAG_CLICK_SUPPRESS_TIMEOUT_MS,
+} from '../../shared/constants';
 
 // ---- Standard scoring (Windows Solitaire style) ----
 /** Waste → Tableau */
@@ -36,10 +39,3 @@ export const TABLEAU_SIZE = 7;
 export const FOUNDATION_SIZE = 4;
 export const DECK_SIZE = 52;
 
-// ---- Drag thresholds ----
-/** Minimum drag distance (pixels) before drag is recognized: 5px squared */
-export const DRAG_START_THRESHOLD_SQ = 25;
-/** Click suppression radius after drag (pixels) squared: 10px squared */
-export const DRAG_CLICK_SUPPRESS_RADIUS_SQ = 100;
-/** Timeout for removing click suppression listener (milliseconds) */
-export const DRAG_CLICK_SUPPRESS_TIMEOUT_MS = 300;

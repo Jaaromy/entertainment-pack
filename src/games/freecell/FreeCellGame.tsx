@@ -7,7 +7,7 @@ import {
   DRAG_START_THRESHOLD_SQ,
   DRAG_CLICK_SUPPRESS_RADIUS_SQ,
   DRAG_CLICK_SUPPRESS_TIMEOUT_MS,
-} from '../klondike/constants'
+} from '@/shared/constants'
 import './freecell.css'
 
 interface FreeCellGameProps {
