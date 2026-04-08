@@ -131,3 +131,33 @@ Tracks significant implementation choices with rationale and date. Update this f
 **Rationale:** The full game state including the 208-card shoe serialises to ~10 kB JSON. The landing page needs to show the current balance without parsing the full shoe. The standalone key enables a cheap `JSON.parse` of a single number.
 
 **Alternatives considered:** Always parse full game state (works, but wasteful for a balance display), store balance in a shared `ep:bj:settings` key (mixing settings and live game data).
+
+---
+
+## 2026-04-07 — FreeCell: Pointer drag matching Klondike's system
+
+**Decision:** FreeCell uses the same pointer-based drag system as Klondike — `onPointerDown` on cards, `pointermove`/`pointerup` on `document`, `data-drop-area`/`data-drop-pile` attributes on drop zones, best-overlap calculation on release. Click (short drag) still works for click-to-select/move. `onDrop(src, destArea, destPile)` added to the hook for direct drag moves without requiring a prior click selection.
+
+**Rationale:** Consistent UX across all games. The drag system already handles single-card moves cleanly; FreeCell only ever moves one card at a time so no supermove preview complexity arises.
+
+**Alternatives considered:** Click-only (no drag) — simpler but inconsistent with Klondike/Blackjack feel on desktop.
+
+---
+
+## 2026-04-07 — FreeCell supermove formula and auto-move safety
+
+**Decision:** A sequence of N cards can only move if `N ≤ (freeCells + 1) × 2^emptyTableau`. If the destination is empty, subtract 1 from the empty pile count. Auto-move only places cards rank ≤ min(opposite-color foundations) + 2.
+
+**Rationale:** The supermove formula is the standard FreeCell rule — it directly emerges from the fact that moving N cards requires N free intermediate slots, and empty tableau piles can hold any sequence (doubling the free space). Auto-move threshold prevents "trapping" cards by committing them too early; +2 threshold is a conservative heuristic that prevents most dead ends.
+
+**Alternatives considered:** No supermove limit (deviates from FreeCell rules), auto-move all cards (leads to unwinnable states), higher safety threshold (makes auto-move too conservative).
+
+---
+
+## 2026-04-07 — FreeCell persistence: `ep:fc:*` keys
+
+**Decision:** FreeCell state, stats use keys `ep:fc:game`, `ep:fc:stats`. Stats track `{ gamesPlayed, gamesWon }`.
+
+**Rationale:** Consistent with existing namespace (`ep:` prefix, game-specific sub-key). Simple stats (just win count) match the landing page badge display and avoid the complexity of Klondike's multi-mode scoring.
+
+**Alternatives considered:** Full stats like Klondike (time, moves, best score) — overkill for FreeCell's simpler scoring model.

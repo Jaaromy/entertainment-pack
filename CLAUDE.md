@@ -21,7 +21,7 @@ CI runs `npm test` before every deploy to GitHub Pages.
 
 Multi-game entertainment pack. React components are thin wrappers — all game logic lives in pure functions. Games share card primitives via `src/shared/`.
 
-**Routing:** Hash-based (`/#/`, `/#/klondike`, `/#/blackjack`) via `src/router/useHashRoute.ts`. No router library. Bookmarkable URLs work on GitHub Pages.
+**Routing:** Hash-based (`/#/`, `/#/klondike`, `/#/blackjack`, `/#/freecell`) via `src/router/useHashRoute.ts`. No router library. Bookmarkable URLs work on GitHub Pages.
 
 **Shared card library (`src/shared/`):**
 - `types.ts` — `Card`, `Suit`, `Rank`
@@ -57,6 +57,15 @@ User input
 - `BlackjackGame.tsx` — Main UI component.
 - Rules: 4-deck shoe (default), 3:2 natural, dealer stands soft 17. `BlackjackOptions` struct ready for variants.
 - Persistence keys: `ep:bj:game`, `ep:bj:stats`, `ep:bj:settings`, `ep:bj:balance`
+
+**FreeCell (`src/games/freecell/`):**
+- `gameLogic.ts` — Pure move functions: `moveToFreeCell`, `moveFromFreeCell`, `moveTableauToTableau`, `moveTableauToFoundation`, `moveFreeCellToFoundation`, `autoMoveToFoundation`.
+- `gameReducer.ts` — Single-level undo (`GameWithHistory` with 2-state limit).
+- `useFreecell.ts` — Click-based game controller (no drag).
+- `FreeCellGame.tsx` — Main UI component with click selection.
+- `freecell.css` — Grid layout: free cells (left) + foundations (right), then 8-column tableau with card fanning.
+- Rules: Descending rank + alternating color on tableau, Ace→King by suit on foundations. Supermove: `(freeCells + 1) × 2^emptyTableau` cards.
+- Persistence keys: `ep:fc:game`, `ep:fc:stats`
 
 **Persistence:** All game state, settings, stats persisted to localStorage with `ep:` prefix.
 

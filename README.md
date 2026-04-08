@@ -1,8 +1,10 @@
 # Entertainment Pack
 
-A collection of browser-based card games. Currently features Klondike Solitaire.
+A collection of browser-based card games.
 
-## Klondike Solitaire
+## Games
+
+### Klondike Solitaire
 
 Classic solitaire with configurable rules:
 
@@ -12,6 +14,26 @@ Classic solitaire with configurable rules:
 - **Undo** — Single-level undo
 - **Stats** — Win/loss tracking per game variant
 - **Vegas Pot** — Running balance carries across games
+
+### Blackjack
+
+Vegas-style blackjack with 4-deck shoe:
+
+- **Rules** — 3:2 natural, dealer stands on all 17s, reshuffle at 25% penetration
+- **Actions** — Hit, Stand, Double Down, Split
+- **Betting** — Chip-based ($1–$500 per hand)
+- **Stats** — Balance tracking, hand history
+
+### FreeCell
+
+Strategic solitaire with eight tableau columns and four free cells:
+
+- **Gameplay** — Most deals are solvable with proper strategy
+- **Free Cells** — Four temporary slots for any card
+- **Supermove** — Moving sequences follows FreeCell rules: `(freeCells + 1) × 2^emptyTableau` cards max
+- **Auto-move** — Safe cards automatically advance to foundations
+- **Undo** — Single-level undo
+- **Stats** — Win tracking
 
 ## Development
 

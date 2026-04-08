@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type Route = '/' | '/klondike' | '/blackjack';
+export type Route = '/' | '/klondike' | '/blackjack' | '/freecell';
 
 function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/';
   if (path === '/klondike') return '/klondike';
   if (path === '/blackjack') return '/blackjack';
+  if (path === '/freecell') return '/freecell';
   return '/';
 }
 
