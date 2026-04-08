@@ -7,6 +7,31 @@
   --card-h: 100px;
 }
 
+/* Shared base for all game boards. Set --card-w; get --gap and --card-h free. */
+.game-container {
+  --gap: 8px;
+  --card-h: calc(var(--card-w) * 100 / 72);
+}
+
+.menu-deal-button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 0.88rem;
+  padding: 3px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.menu-deal-button:hover:not(:disabled) {
+  background: rgba(255,255,255,0.2);
+}
+
+.menu-deal-button:disabled {
+  color: rgba(255,255,255,0.35);
+  cursor: default;
+}
+
 /* =========================================================
    Card base
    ========================================================= */

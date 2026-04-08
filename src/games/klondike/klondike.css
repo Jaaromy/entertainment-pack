@@ -5,19 +5,14 @@
    ========================================================= */
 
 .klondike-game {
+  /* Card width shrinks on narrow screens so 7 columns always fit */
+  --card-w: min(72px, calc((100vw - 32px - var(--gap) * 6) / 7));
+  --waste-offset: calc(var(--card-w) * 0.25);
   min-height: 100vh;
   padding: 16px 16px 24px;
   background: #007800;
   user-select: none;
   touch-action: manipulation;
-}
-
-:root {
-  --gap: 8px;
-  /* Card width shrinks on narrow screens so 7 columns always fit */
-  --card-w: min(72px, calc((100vw - 32px - var(--gap) * 6) / 7));
-  --card-h: calc(var(--card-w) * 100 / 72);
-  --waste-offset: calc(var(--card-w) * 0.25);
 }
 
 /* ---- Centered board container ---- */
@@ -59,26 +54,8 @@
   display: inline-block;
 }
 
-.menu-deal-button,
-.menu-trigger {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 0.88rem;
-  padding: 3px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.menu-deal-button:hover:not(:disabled),
-.menu-trigger:hover,
-.menu-trigger--open {
+.menu-deal-button--open {
   background: rgba(255,255,255,0.2);
-}
-
-.menu-deal-button:disabled {
-  color: rgba(255,255,255,0.35);
-  cursor: default;
 }
 
 .menu-dropdown {

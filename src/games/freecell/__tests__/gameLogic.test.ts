@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Card } from '@/shared/types'
 import {
   createInitialState,
+  createMicrosoftGame,
   canPlaceOnFoundation,
   canPlaceOnTableau,
   countFreeCells,
@@ -696,5 +697,82 @@ describe('card invariant', () => {
       assertCardInvariant(t1)
       state = t1
     }
+  })
+})
+
+describe('createMicrosoftGame', () => {
+  it('deals exactly 52 unique cards', () => {
+    const state = createMicrosoftGame(1)
+    const allCards = [
+      ...state.tableau.flat(),
+      ...state.freeCells.filter(Boolean) as Card[],
+      ...state.foundations.flat(),
+    ]
+    expect(allCards).toHaveLength(52)
+    const ids = new Set(allCards.map((c) => c.id))
+    expect(ids.size).toBe(52)
+  })
+
+  it('deals 4 columns of 7 and 4 columns of 6', () => {
+    const state = createMicrosoftGame(1)
+    const lengths = state.tableau.map((p) => p.length)
+    expect(lengths.filter((l) => l === 7)).toHaveLength(4)
+    expect(lengths.filter((l) => l === 6)).toHaveLength(4)
+  })
+
+  it('all dealt cards are face up', () => {
+    const state = createMicrosoftGame(1)
+    expect(state.tableau.flat().every((c) => c.faceUp)).toBe(true)
+  })
+
+  it('stores gameNumber as seed', () => {
+    expect(createMicrosoftGame(1).seed).toBe(1)
+    expect(createMicrosoftGame(617).seed).toBe(617)
+  })
+
+  // Known layout verified against solitairelaboratory.com (Jim Horne's original algorithm)
+  // game #1 column 0 bottom card is Jack of Diamonds
+  it('game #1 column 0 bottom card is Jack of Diamonds', () => {
+    const state = createMicrosoftGame(1)
+    const bottomCard = state.tableau[0]![0]!
+    expect(bottomCard.rank).toBe(11)
+    expect(bottomCard.suit).toBe('diamonds')
+  })
+
+  // game #1 column 3 bottom card is Jack of Clubs
+  it('game #1 column 3 bottom card is Jack of Clubs', () => {
+    const state = createMicrosoftGame(1)
+    const bottomCard = state.tableau[3]![0]!
+    expect(bottomCard.rank).toBe(11)
+    expect(bottomCard.suit).toBe('clubs')
+  })
+
+  it('game #617 deals without error', () => {
+    expect(() => createMicrosoftGame(617)).not.toThrow()
+    const state = createMicrosoftGame(617)
+    assertCardInvariant(state)
+  })
+
+  // game #11982 verified against solitairelaboratory.com reference
+  it('game #11982 column 0 bottom card is Ace of Hearts', () => {
+    const state = createMicrosoftGame(11982)
+    const bottomCard = state.tableau[0]![0]!
+    expect(bottomCard.rank).toBe(1)
+    expect(bottomCard.suit).toBe('hearts')
+  })
+
+  it('game #11982 column 1 bottom card is Ace of Spades', () => {
+    const state = createMicrosoftGame(11982)
+    const bottomCard = state.tableau[1]![0]!
+    expect(bottomCard.rank).toBe(1)
+    expect(bottomCard.suit).toBe('spades')
+  })
+
+  it('different game numbers produce different layouts', () => {
+    const g1 = createMicrosoftGame(1)
+    const g2 = createMicrosoftGame(2)
+    const col0_g1 = g1.tableau[0]!.map((c) => c.id).join(',')
+    const col0_g2 = g2.tableau[0]!.map((c) => c.id).join(',')
+    expect(col0_g1).not.toBe(col0_g2)
   })
 })

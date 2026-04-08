@@ -36,7 +36,7 @@ export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onS
       <div className="menu-bar-left">
       <div className="menu-bar-inner" ref={ref}>
         <button
-          className={`menu-trigger${open ? ' menu-trigger--open' : ''}`}
+          className={`menu-deal-button${open ? ' menu-deal-button--open' : ''}`}
           onClick={() => setOpen(o => !o)}
         >
           Game

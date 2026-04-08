@@ -1,10 +1,17 @@
 import { FreeCellState, FreeCellWithHistory } from './types'
-import { createInitialState } from './gameLogic'
+import { createInitialState, createMicrosoftGame } from './gameLogic'
 
 export function createGame(seed: number): FreeCellWithHistory {
   const state = createInitialState(seed)
   return {
     states: [state],
+    index: 0,
+  }
+}
+
+export function createMicrosoftGameHistory(gameNumber: number): FreeCellWithHistory {
+  return {
+    states: [createMicrosoftGame(gameNumber)],
     index: 0,
   }
 }

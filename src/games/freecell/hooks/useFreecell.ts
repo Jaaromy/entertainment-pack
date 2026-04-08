@@ -7,12 +7,11 @@ import {
   moveTableauToFoundation,
 } from '../gameLogic'
 import {
-  createGame,
+  createMicrosoftGameHistory,
   currentState,
   pushState,
   undo as undoState,
   canUndo as canUndoState,
-  newGame,
 } from '../gameReducer'
 import {
   loadFreeCellGame,
@@ -25,7 +24,8 @@ export interface UseFreeCellReturn {
   canUndo: boolean
   onDrop(src: CardLocation, destArea: 'tableau' | 'freecell' | 'foundation', destPile: number): void
   doUndo(): void
-  startNewGame(seed?: number): void
+  startNewGame(): void
+  startGameNumber(n: number): void
 }
 
 export function useFreecell(): UseFreeCellReturn {
@@ -39,9 +39,7 @@ export function useFreecell(): UseFreeCellReturn {
     if (saved && saved.status === 'playing') {
       gameRef.current = { states: [saved], index: 0 }
     } else {
-      // Generate a new seed from timestamp
-      const seed = Date.now() % 1000000
-      gameRef.current = createGame(seed)
+      gameRef.current = createMicrosoftGameHistory(randomGameNumber())
     }
     setGameState(currentState(gameRef.current))
   }, [])
@@ -87,10 +85,16 @@ export function useFreecell(): UseFreeCellReturn {
     winRecordedRef.current = false // Reset win recording if undoing from won state
   }
 
-  function handleStartNewGame(seed?: number): void {
-    if (!gameRef.current) return
-    const newSeed = seed ?? Date.now() % 1000000
-    gameRef.current = newGame(gameRef.current, newSeed)
+  function handleStartNewGame(): void {
+    gameRef.current = createMicrosoftGameHistory(randomGameNumber())
+    const state = currentState(gameRef.current)
+    setGameState(state)
+    saveFreeCellGame(state)
+    winRecordedRef.current = false
+  }
+
+  function handleStartGameNumber(n: number): void {
+    gameRef.current = createMicrosoftGameHistory(n)
     const state = currentState(gameRef.current)
     setGameState(state)
     saveFreeCellGame(state)
@@ -103,7 +107,12 @@ export function useFreecell(): UseFreeCellReturn {
     onDrop: handleDrop,
     doUndo: handleUndo,
     startNewGame: handleStartNewGame,
+    startGameNumber: handleStartGameNumber,
   }
+}
+
+function randomGameNumber(): number {
+  return Math.floor(Math.random() * 32000) + 1
 }
 
 function attemptMove(

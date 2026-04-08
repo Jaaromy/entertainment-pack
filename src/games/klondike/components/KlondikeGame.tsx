@@ -181,7 +181,7 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
   };
 
   return (
-    <div className="klondike-game" onDoubleClick={handleBoardDoubleClick}>
+    <div className="klondike-game game-container" onDoubleClick={handleBoardDoubleClick}>
       <div
         className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}
       >

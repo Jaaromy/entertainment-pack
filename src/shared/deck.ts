@@ -1,6 +1,8 @@
 import type { Card } from './types';
 import { SUITS, RANKS } from './constants';
-import { mulberry32, shuffleArray } from './rng';
+import { mulberry32, shuffleArray, msShuffle } from './rng';
+
+export { msShuffle };
 
 /** Build an ordered, face-down 52-card deck (4 suits × 13 ranks). */
 export function createDeck(): Card[] {

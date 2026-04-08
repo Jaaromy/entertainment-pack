@@ -1,6 +1,6 @@
 import { Card, Suit, Rank } from '@/shared/types'
 import { RED_SUITS, SUITS } from '@/shared/constants'
-import { createShuffledDeck } from '@/shared/deck'
+import { createShuffledDeck, msShuffle } from '@/shared/deck'
 import { FreeCellState, GameStatus } from './types'
 import {
   TABLEAU_SIZE,
@@ -9,6 +9,35 @@ import {
   DECK_SIZE,
   AUTO_MOVE_THRESHOLD,
 } from './constants'
+
+// Suit order used by the original Microsoft FreeCell shuffle (clubs=0, diamonds=1, hearts=2, spades=3)
+const MS_SUITS: Suit[] = ['clubs', 'diamonds', 'hearts', 'spades']
+
+/**
+ * Creates a FreeCell game using the Microsoft FreeCell shuffle algorithm.
+ * Game numbers 1–32000 match the original Windows FreeCell exactly.
+ */
+export function createMicrosoftGame(gameNumber: number): FreeCellState {
+  // Initial deck: 0=Ac, 1=2c, ..., 12=Kc, 13=Ad, ..., 51=Ks
+  const deckIndices = msShuffle(Array.from({ length: 52 }, (_, i) => i), gameNumber)
+
+  const tableau: Card[][] = Array.from({ length: TABLEAU_SIZE }, () => [])
+  for (let pos = 0; pos < DECK_SIZE; pos++) {
+    const cardIdx = deckIndices[pos]!
+    const suit = MS_SUITS[cardIdx % 4]!          // rank-major: suit = card % 4
+    const rank = (Math.floor(cardIdx / 4) + 1) as Rank  // rank = card / 4 + 1
+    tableau[pos % TABLEAU_SIZE]!.push({ id: `${suit}-${rank}`, suit, rank, faceUp: true })
+  }
+
+  return {
+    tableau,
+    freeCells: [null, null, null, null],
+    foundations: [[], [], [], []],
+    moves: 0,
+    seed: gameNumber,
+    status: 'playing',
+  }
+}
 
 export function createInitialState(seed: number): FreeCellState {
   const deck = createShuffledDeck(seed)

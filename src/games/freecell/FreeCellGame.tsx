@@ -24,7 +24,19 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
     onDrop,
     doUndo,
     startNewGame,
+    startGameNumber,
   } = useFreecell()
+
+  function handleSelectGame() {
+    const input = window.prompt('Enter game number (1–32000):')
+    if (input === null) return
+    const n = parseInt(input.trim(), 10)
+    if (!Number.isInteger(n) || n < 1 || n > 32000) {
+      alert('Invalid game number. Enter a whole number between 1 and 32000.')
+      return
+    }
+    startGameNumber(n)
+  }
 
   const [dragSource, setDragSource] = useState<CardLocation | null>(null)
   const dragPreviewRef = useRef<HTMLDivElement>(null)
@@ -122,6 +134,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
   const isWon = state.status === 'won'
 
   return (
+    <div className="freecell-game game-container">
     <div className="freecell-board">
       {/* Drag preview — always in DOM so ref is always valid */}
       <div
@@ -147,10 +160,11 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
       <div className="menu-bar">
         <div className="menu-bar-left">
           <button className="menu-deal-button" onClick={doUndo} disabled={!canUndo}>Undo</button>
-          <button className="menu-deal-button" onClick={() => startNewGame(Date.now())}>New Game</button>
+          <button className="menu-deal-button" onClick={startNewGame}>New Game</button>
+          <button className="menu-deal-button" onClick={handleSelectGame}>Select Game</button>
           {onHome && <button className="menu-deal-button" onClick={onHome}>All Games</button>}
         </div>
-        <span className="menu-score">FreeCell</span>
+        <span className="menu-score">Game #{state.seed}</span>
       </div>
 
       <div className="freecell-top-row">
@@ -221,6 +235,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
       <div className="freecell-stats">
         Moves: {state.moves}
       </div>
+    </div>
     </div>
   )
 }
