@@ -73,8 +73,8 @@ export function canPlaceOnTableau(card: Card, tableau: Card[]): boolean {
     return true // Empty pile accepts any card
   }
   const topCard = tableau[tableau.length - 1]
-  // Descending rank
-  if (card.rank >= topCard.rank) {
+  // Must be exactly one rank lower (consecutive)
+  if (card.rank !== topCard.rank - 1) {
     return false
   }
   // Alternating color

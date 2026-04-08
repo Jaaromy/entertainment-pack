@@ -17,20 +17,26 @@ import {
   loadFreeCellGame,
   saveFreeCellGame,
   recordFreeCellResult,
+  loadFreeCellStats,
+  FreeCellStats,
 } from '../storage'
 
 export interface UseFreeCellReturn {
   state: FreeCellState
+  stats: FreeCellStats
   canUndo: boolean
   onDrop(src: CardLocation, destArea: 'tableau' | 'freecell' | 'foundation', destPile: number): void
+  onDoubleClick(loc: CardLocation): void
   doUndo(): void
   startNewGame(): void
   startGameNumber(n: number): void
+  restartGame(): void
 }
 
 export function useFreecell(): UseFreeCellReturn {
   const gameRef = useRef<FreeCellWithHistory | null>(null)
   const [gameState, setGameState] = useState<FreeCellState | null>(null)
+  const [stats, setStats] = useState<FreeCellStats>(() => loadFreeCellStats())
   const winRecordedRef = useRef(false)
 
   // Initialize game on mount
@@ -44,13 +50,18 @@ export function useFreecell(): UseFreeCellReturn {
     setGameState(currentState(gameRef.current))
   }, [])
 
+  function record(won: boolean, moves?: number, seed?: number): void {
+    recordFreeCellResult(won, moves, seed)
+    setStats(loadFreeCellStats())
+  }
+
   // Record win when status changes to 'won'
   useEffect(() => {
     if (!gameState || gameState.status !== 'won' || winRecordedRef.current) {
       return
     }
     winRecordedRef.current = true
-    recordFreeCellResult(true)
+    record(true, gameState.moves, gameState.seed)
   }, [gameState])
 
   function commit(newState: FreeCellState): void {
@@ -85,16 +96,41 @@ export function useFreecell(): UseFreeCellReturn {
     winRecordedRef.current = false // Reset win recording if undoing from won state
   }
 
-  function handleStartNewGame(): void {
-    gameRef.current = createMicrosoftGameHistory(randomGameNumber())
+  function startGame(gameNumber: number): void {
+    const cur = gameRef.current ? currentState(gameRef.current) : null
+    if (cur && cur.status === 'playing' && !winRecordedRef.current) {
+      record(false, cur.moves, cur.seed)
+    }
+    gameRef.current = createMicrosoftGameHistory(gameNumber)
     const state = currentState(gameRef.current)
     setGameState(state)
     saveFreeCellGame(state)
     winRecordedRef.current = false
   }
 
+  function handleStartNewGame(): void {
+    startGame(randomGameNumber())
+  }
+
   function handleStartGameNumber(n: number): void {
-    gameRef.current = createMicrosoftGameHistory(n)
+    startGame(n)
+  }
+
+  function handleDoubleClick(loc: CardLocation): void {
+    if (!gameState) return
+    // Only top cards of tableau piles can be moved to a free cell via double-click
+    if (loc.area !== 'tableau') return
+    const pile = gameState.tableau[loc.pile]
+    if (loc.cardIndex !== pile.length - 1) return
+    const newState = moveToFreeCell(gameState, 'tableau', loc.pile)
+    if (newState) commit(newState)
+  }
+
+  function handleRestartGame(): void {
+    const cur = gameRef.current ? currentState(gameRef.current) : null
+    if (!cur) return
+    const seed = cur.seed
+    gameRef.current = createMicrosoftGameHistory(seed)
     const state = currentState(gameRef.current)
     setGameState(state)
     saveFreeCellGame(state)
@@ -103,11 +139,14 @@ export function useFreecell(): UseFreeCellReturn {
 
   return {
     state: gameState || ({} as FreeCellState),
+    stats,
     canUndo: !!gameRef.current && canUndoState(gameRef.current),
     onDrop: handleDrop,
+    onDoubleClick: handleDoubleClick,
     doUndo: handleUndo,
     startNewGame: handleStartNewGame,
     startGameNumber: handleStartGameNumber,
+    restartGame: handleRestartGame,
   }
 }
 

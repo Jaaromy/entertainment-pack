@@ -3,6 +3,19 @@ import { FreeCellState } from './types'
 export interface FreeCellStats {
   gamesPlayed: number
   gamesWon: number
+  currentStreak: number
+  bestStreak: number
+  leastMoves: number | null
+  gameBests: Record<number, number>
+}
+
+const DEFAULT_STATS: FreeCellStats = {
+  gamesPlayed: 0,
+  gamesWon: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  leastMoves: null,
+  gameBests: {},
 }
 
 const GAME_KEY = 'ep:fc:game'
@@ -32,20 +45,44 @@ export function clearFreeCellGame(): void {
 export function loadFreeCellStats(): FreeCellStats {
   try {
     const stored = localStorage.getItem(STATS_KEY)
-    return stored ? JSON.parse(stored) : { gamesPlayed: 0, gamesWon: 0 }
+    if (!stored) return { ...DEFAULT_STATS }
+    const p = JSON.parse(stored)
+    return {
+      gamesPlayed:    typeof p.gamesPlayed    === 'number' ? p.gamesPlayed    : 0,
+      gamesWon:       typeof p.gamesWon       === 'number' ? p.gamesWon       : 0,
+      currentStreak:  typeof p.currentStreak  === 'number' ? p.currentStreak  : 0,
+      bestStreak:     typeof p.bestStreak     === 'number' ? p.bestStreak     : 0,
+      leastMoves:     typeof p.leastMoves     === 'number' ? p.leastMoves     : null,
+      gameBests:      p.gameBests && typeof p.gameBests === 'object' ? p.gameBests : {},
+    }
   } catch {
-    return { gamesPlayed: 0, gamesWon: 0 }
+    return { ...DEFAULT_STATS }
   }
 }
 
-export function recordFreeCellResult(won: boolean): void {
+export function recordFreeCellResult(won: boolean, moves?: number, seed?: number): void {
   try {
     const stats = loadFreeCellStats()
-    stats.gamesPlayed++
-    if (won) {
-      stats.gamesWon++
+    const newStreak = won ? stats.currentStreak + 1 : 0
+    const leastMoves =
+      won && moves !== undefined
+        ? stats.leastMoves === null
+          ? moves
+          : Math.min(stats.leastMoves, moves)
+        : stats.leastMoves
+    const gameBests = { ...stats.gameBests }
+    if (won && moves !== undefined && seed !== undefined) {
+      gameBests[seed] = Math.min(gameBests[seed] ?? Infinity, moves)
     }
-    localStorage.setItem(STATS_KEY, JSON.stringify(stats))
+    const next: FreeCellStats = {
+      gamesPlayed: stats.gamesPlayed + 1,
+      gamesWon: won ? stats.gamesWon + 1 : stats.gamesWon,
+      currentStreak: newStreak,
+      bestStreak: Math.max(stats.bestStreak, newStreak),
+      leastMoves,
+      gameBests,
+    }
+    localStorage.setItem(STATS_KEY, JSON.stringify(next))
   } catch {
     // Silently fail
   }

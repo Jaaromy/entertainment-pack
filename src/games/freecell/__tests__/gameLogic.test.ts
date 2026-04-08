@@ -171,6 +171,13 @@ describe('canPlaceOnTableau', () => {
     expect(canPlaceOnTableau(card(7, 'H'), [card(6, 'S')])).toBe(false)
   })
 
+  it('rejects non-consecutive rank even with correct color', () => {
+    // 3♥ (red) on 6♠ (black) — rank gap, not consecutive
+    expect(canPlaceOnTableau(card(3, 'H'), [card(6, 'S')])).toBe(false)
+    // 1♠ (black) on 9♥ (red) — rank gap
+    expect(canPlaceOnTableau(card(1, 'S'), [card(9, 'H')])).toBe(false)
+  })
+
   it('rejects same color', () => {
     // Red on red
     expect(canPlaceOnTableau(card(5, 'H'), [card(6, 'D')])).toBe(false)
@@ -311,7 +318,7 @@ describe('moveFromFreeCell', () => {
     const state = makeState({
       freeCells: [card(3, 'H'), null, null, null],
       tableau: [
-        [card(5, 'S')],
+        [card(4, 'S')],
         [],
         [],
         [],
@@ -324,7 +331,7 @@ describe('moveFromFreeCell', () => {
     const result = moveFromFreeCell(state, 0, 'tableau', 0)
     expect(result).not.toBeNull()
     expect(result!.freeCells[0]).toBeNull()
-    expect(result!.tableau[0]).toEqual([card(5, 'S'), card(3, 'H')])
+    expect(result!.tableau[0]).toEqual([card(4, 'S'), card(3, 'H')])
   })
 
   it('moves any card from free cell to empty tableau pile', () => {
@@ -423,7 +430,7 @@ describe('moveTableauToTableau', () => {
     const state = makeState({
       tableau: [
         [card(5, 'S'), card(3, 'H')],
-        [card(6, 'C')],
+        [card(4, 'C')],
         [],
         [],
         [],
@@ -435,7 +442,7 @@ describe('moveTableauToTableau', () => {
     const result = moveTableauToTableau(state, 0, 1, 1)
     expect(result).not.toBeNull()
     expect(result!.tableau[0]).toEqual([card(5, 'S')])
-    expect(result!.tableau[1]).toEqual([card(6, 'C'), card(3, 'H')])
+    expect(result!.tableau[1]).toEqual([card(4, 'C'), card(3, 'H')])
   })
 
   it('moves sequence of cards if valid', () => {
@@ -456,8 +463,8 @@ describe('moveTableauToTableau', () => {
     // Change 6♣ to 6♥ (red), so 4♣ (black) can go on it
     const state2 = makeState({
       tableau: [
-        [card(10, 'S'), card(5, 'H'), card(4, 'C'), card(3, 'D')],
-        [card(6, 'H')],
+        [card(10, 'S'), card(7, 'H'), card(4, 'C'), card(3, 'D')],
+        [card(5, 'H')],
         [],
         [],
         [],
@@ -466,18 +473,18 @@ describe('moveTableauToTableau', () => {
         [],
       ],
     })
-    // Move 4♣ and 3♦ to 6♥
+    // Move 4♣ and 3♦ to 5♥
     const result = moveTableauToTableau(state2, 0, 2, 1)
     expect(result).not.toBeNull()
-    expect(result!.tableau[0]).toEqual([card(10, 'S'), card(5, 'H')])
-    expect(result!.tableau[1]).toEqual([card(6, 'H'), card(4, 'C'), card(3, 'D')])
+    expect(result!.tableau[0]).toEqual([card(10, 'S'), card(7, 'H')])
+    expect(result!.tableau[1]).toEqual([card(5, 'H'), card(4, 'C'), card(3, 'D')])
   })
 
   it('returns null if sequence is invalid', () => {
     const state = makeState({
       tableau: [
         [card(5, 'S'), card(4, 'H')], // 4♥ on 5♠ is valid
-        [card(6, 'C')],
+        [card(5, 'C')],
         [],
         [],
         [],
@@ -486,7 +493,7 @@ describe('moveTableauToTableau', () => {
         [],
       ],
     })
-    // Try to move from index 1 (4♥) but pair 4♥ with nothing = sequence of 1, valid
+    // Try to move from index 1 (4♥) — sequence of 1, valid
     const result = moveTableauToTableau(state, 0, 1, 1)
     expect(result).not.toBeNull()
   })

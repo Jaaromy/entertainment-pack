@@ -26,6 +26,14 @@
   z-index: 10000;
   display: flex;
   flex-direction: column;
+  --card-overlap: calc(var(--card-h) - 22px);
+}
+
+.freecell-drag-preview-card {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  flex-shrink: 0;
 }
 
 .freecell-drag-preview-card:not(:last-child) {
@@ -61,9 +69,20 @@
 
 .freecell-top-row {
   display: grid;
-  grid-template-columns: repeat(8, var(--card-w));
+  grid-template-columns: repeat(4, var(--card-w)) calc(var(--card-w) * 0.65) repeat(4, var(--card-w));
   gap: 4px;
   justify-content: center;
+}
+
+.freecell-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--card-w) * 0.7);
+  color: rgba(0, 0, 0, 0.55);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
 }
 
 .freecell-cell,
@@ -130,6 +149,12 @@
   transform: translateY(-2px);
 }
 
+.freecell-column-card.freecell-column-card--peeked {
+  z-index: 200;
+  transform: translateY(-3px);
+  filter: brightness(1.05) drop-shadow(0 6px 16px rgba(0, 0, 0, 0.7));
+}
+
 
 .freecell-empty-pile {
   width: var(--card-w);
@@ -181,9 +206,16 @@
 }
 
 .freecell-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.875rem;
+}
+
+.freecell-stats-best {
+  color: rgba(255, 220, 80, 0.85);
 }
 
 .freecell-status {

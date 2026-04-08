@@ -20,11 +20,14 @@ interface FreeCellGameProps {
 export default function FreeCellGame({ onHome }: FreeCellGameProps) {
   const {
     state,
+    stats,
     canUndo,
     onDrop,
+    onDoubleClick,
     doUndo,
     startNewGame,
     startGameNumber,
+    restartGame,
   } = useFreecell()
 
   function handleSelectGame() {
@@ -39,6 +42,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
   }
 
   const [dragSource, setDragSource] = useState<CardLocation | null>(null)
+  const [peekLoc, setPeekLoc] = useState<{ pile: number; cardIndex: number } | null>(null)
   const dragPreviewRef = useRef<HTMLDivElement>(null)
 
   // All hooks must be called before any early return
@@ -56,12 +60,17 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
     const { width: CARD_W, height: CARD_H } = sourceEl.getBoundingClientRect()
     let dragging = false
 
+    if (loc.area === 'tableau') {
+      setPeekLoc({ pile: loc.pile, cardIndex: loc.cardIndex })
+    }
+
     const handleMove = (me: PointerEvent) => {
       if (!dragging) {
         const dx = me.clientX - startX
         const dy = me.clientY - startY
         if (dx * dx + dy * dy < DRAG_START_THRESHOLD_SQ) return
         dragging = true
+        setPeekLoc(null)
         sourceEl.style.opacity = '0'
         setDragSource(loc)
       }
@@ -78,12 +87,14 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
 
       if (!dragging) {
         sourceEl.style.opacity = ''
+        setPeekLoc(null)
         return
       }
 
       sourceEl.style.opacity = ''
       if (dragPreviewRef.current) dragPreviewRef.current.style.display = 'none'
       setDragSource(null)
+      setPeekLoc(null)
 
       const releaseX = ue.clientX
       const releaseY = ue.clientY
@@ -127,7 +138,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
     document.addEventListener('pointerup', handleUp)
   }, [onDrop])
 
-  if (!state || !state.tableau) {
+  if (!state || !state.tableau || state.seed == null) {
     return <div>Loading...</div>
   }
 
@@ -160,6 +171,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
       <div className="menu-bar">
         <div className="menu-bar-left">
           <button className="menu-deal-button" onClick={doUndo} disabled={!canUndo}>Undo</button>
+          <button className="menu-deal-button" onClick={restartGame}>Restart</button>
           <button className="menu-deal-button" onClick={startNewGame}>New Game</button>
           <button className="menu-deal-button" onClick={handleSelectGame}>Select Game</button>
           {onHome && <button className="menu-deal-button" onClick={onHome}>All Games</button>}
@@ -185,6 +197,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
             }
           </div>
         ))}
+        <div className="freecell-separator">♣</div>
         {state.foundations.map((pile, idx) => (
           <div
             key={idx}
@@ -216,9 +229,15 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
               ? <div className="freecell-empty-pile" />
               : pile.map((card, cardIdx) => {
                   const location: CardLocation = { area: 'tableau', pile: pileIdx, cardIndex: cardIdx }
+                  const isPeeked = peekLoc?.pile === pileIdx && peekLoc?.cardIndex === cardIdx
 
+                  const isTopCard = cardIdx === pile.length - 1
                   return (
-                    <div key={card.id} className="freecell-column-card">
+                    <div
+                      key={card.id}
+                      className={`freecell-column-card${isPeeked ? ' freecell-column-card--peeked' : ''}`}
+                      onDoubleClick={isTopCard ? () => onDoubleClick(location) : undefined}
+                    >
                       <CardView
                         card={card}
                         isDragSource={dragSource?.area === 'tableau' && dragSource.pile === pileIdx && cardIdx >= dragSource.cardIndex}
@@ -233,7 +252,16 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
       </div>
 
       <div className="freecell-stats">
-        Moves: {state.moves}
+        <span>
+          Moves: {state.moves}
+          {stats.gameBests[state.seed] !== undefined && (
+            <span className="freecell-stats-best"> (Best: {stats.gameBests[state.seed]})</span>
+          )}
+        </span>
+        {stats.gamesPlayed > 0 && (
+          <span>Win%: {Math.round((stats.gamesWon / stats.gamesPlayed) * 100)}%</span>
+        )}
+        <span>Streak: {stats.currentStreak}/{stats.bestStreak}</span>
       </div>
     </div>
     </div>
