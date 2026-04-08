@@ -21,9 +21,6 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
   const {
     state,
     canUndo,
-    selection,
-    onCardClick,
-    onEmptyClick,
     onDrop,
     doUndo,
     startNewGame,
@@ -69,7 +66,6 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
 
       if (!dragging) {
         sourceEl.style.opacity = ''
-        onCardClick(loc)
         return
       }
 
@@ -117,7 +113,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
 
     document.addEventListener('pointermove', handleMove)
     document.addEventListener('pointerup', handleUp)
-  }, [onCardClick, onEmptyClick, onDrop])
+  }, [onDrop])
 
   if (!state || !state.tableau) {
     return <div>Loading...</div>
@@ -163,8 +159,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
             key={idx}
             data-drop-area="freecell"
             data-drop-pile={idx}
-            className={`freecell-cell${selection?.location.area === 'freecell' && selection.location.cell === idx ? ' selected' : ''}`}
-            onClick={() => onEmptyClick('freecell', idx)}
+            className="freecell-cell"
           >
             {card
               ? <CardView
@@ -181,8 +176,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
             key={idx}
             data-drop-area="foundation"
             data-drop-pile={idx}
-            className={`freecell-foundation${selection?.location.area === 'foundation' && selection.location.pile === idx ? ' selected' : ''}`}
-            onClick={() => onEmptyClick('foundation', idx)}
+            className="freecell-foundation"
           >
             {pile.length > 0
               ? <CardView
@@ -205,16 +199,12 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
         {state.tableau.map((pile, pileIdx) => (
           <div key={pileIdx} data-drop-area="tableau" data-drop-pile={pileIdx} className="freecell-column">
             {pile.length === 0
-              ? <div className="freecell-empty-pile" onClick={() => onEmptyClick('tableau', pileIdx)} />
+              ? <div className="freecell-empty-pile" />
               : pile.map((card, cardIdx) => {
                   const location: CardLocation = { area: 'tableau', pile: pileIdx, cardIndex: cardIdx }
-                  const isSelected =
-                    selection?.location.area === 'tableau' &&
-                    selection.location.pile === pileIdx &&
-                    selection.location.cardIndex === cardIdx
 
                   return (
-                    <div key={card.id} className={`freecell-column-card${isSelected ? ' selected' : ''}`}>
+                    <div key={card.id} className="freecell-column-card">
                       <CardView
                         card={card}
                         isDragSource={dragSource?.area === 'tableau' && dragSource.pile === pileIdx && cardIdx >= dragSource.cardIndex}

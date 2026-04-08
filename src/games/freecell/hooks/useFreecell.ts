@@ -5,8 +5,6 @@ import {
   moveFromFreeCell,
   moveTableauToTableau,
   moveTableauToFoundation,
-  moveFreeCellToFoundation,
-  findFoundationTarget,
 } from '../gameLogic'
 import {
   createGame,
@@ -19,20 +17,12 @@ import {
 import {
   loadFreeCellGame,
   saveFreeCellGame,
-  clearFreeCellGame,
   recordFreeCellResult,
 } from '../storage'
-
-interface Selection {
-  location: CardLocation
-}
 
 export interface UseFreeCellReturn {
   state: FreeCellState
   canUndo: boolean
-  selection: Selection | null
-  onCardClick(loc: CardLocation): void
-  onEmptyClick(area: 'tableau' | 'freecell' | 'foundation', index: number): void
   onDrop(src: CardLocation, destArea: 'tableau' | 'freecell' | 'foundation', destPile: number): void
   doUndo(): void
   startNewGame(seed?: number): void
@@ -41,7 +31,6 @@ export interface UseFreeCellReturn {
 export function useFreecell(): UseFreeCellReturn {
   const gameRef = useRef<FreeCellWithHistory | null>(null)
   const [gameState, setGameState] = useState<FreeCellState | null>(null)
-  const [selection, setSelection] = useState<Selection | null>(null)
   const winRecordedRef = useRef(false)
 
   // Initialize game on mount
@@ -73,60 +62,6 @@ export function useFreecell(): UseFreeCellReturn {
     saveFreeCellGame(currentState(gameRef.current))
   }
 
-  function handleCardClick(location: CardLocation): void {
-    if (!gameState) return
-
-    // If clicking the same card already selected, deselect
-    if (selection && locationsMatch(selection.location, location)) {
-      setSelection(null)
-      return
-    }
-
-    // If no selection, select this card
-    if (!selection) {
-      const hasCards = hasCardAtLocation(gameState, location)
-      if (hasCards) {
-        setSelection({ location })
-      }
-      return
-    }
-
-    // Try to move from selection to this location
-    const newState = attemptMove(gameState, selection.location, location)
-    if (newState) {
-      commit(newState)
-      setSelection(null)
-    } else {
-      // Invalid move — update selection to new card
-      const hasCards = hasCardAtLocation(gameState, location)
-      if (hasCards) {
-        setSelection({ location })
-      } else {
-        setSelection(null)
-      }
-    }
-  }
-
-  function handleEmptyClick(
-    area: 'tableau' | 'freecell' | 'foundation',
-    index: number,
-  ): void {
-    if (!gameState || !selection) return
-
-    const destLocation: CardLocation =
-      area === 'freecell'
-        ? { area: 'freecell', cell: index }
-        : area === 'foundation'
-          ? { area: 'foundation', pile: index }
-          : { area: 'tableau', pile: index, cardIndex: gameState.tableau[index].length }
-
-    const newState = attemptMove(gameState, selection.location, destLocation)
-    if (newState) {
-      commit(newState)
-      setSelection(null)
-    }
-  }
-
   function handleDrop(
     src: CardLocation,
     destArea: 'tableau' | 'freecell' | 'foundation',
@@ -140,10 +75,7 @@ export function useFreecell(): UseFreeCellReturn {
           ? { area: 'foundation', pile: destPile }
           : { area: 'tableau', pile: destPile, cardIndex: gameState.tableau[destPile].length }
     const newState = attemptMove(gameState, src, destLocation)
-    if (newState) {
-      commit(newState)
-      setSelection(null)
-    }
+    if (newState) commit(newState)
   }
 
   function handleUndo(): void {
@@ -162,47 +94,16 @@ export function useFreecell(): UseFreeCellReturn {
     const state = currentState(gameRef.current)
     setGameState(state)
     saveFreeCellGame(state)
-    setSelection(null)
     winRecordedRef.current = false
   }
 
   return {
     state: gameState || ({} as FreeCellState),
     canUndo: !!gameRef.current && canUndoState(gameRef.current),
-    selection,
-    onCardClick: handleCardClick,
-    onEmptyClick: handleEmptyClick,
     onDrop: handleDrop,
     doUndo: handleUndo,
     startNewGame: handleStartNewGame,
   }
-}
-
-function hasCardAtLocation(state: FreeCellState, location: CardLocation): boolean {
-  if (location.area === 'tableau') {
-    const pile = state.tableau[location.pile]
-    return location.cardIndex < pile.length
-  }
-  if (location.area === 'freecell') {
-    return state.freeCells[location.cell] !== null
-  }
-  if (location.area === 'foundation') {
-    return state.foundations[location.pile].length > 0
-  }
-  return false
-}
-
-function locationsMatch(a: CardLocation, b: CardLocation): boolean {
-  if (a.area === 'tableau' && b.area === 'tableau') {
-    return a.pile === b.pile && a.cardIndex === b.cardIndex
-  }
-  if (a.area === 'freecell' && b.area === 'freecell') {
-    return a.cell === b.cell
-  }
-  if (a.area === 'foundation' && b.area === 'foundation') {
-    return a.pile === b.pile
-  }
-  return false
 }
 
 function attemptMove(
