@@ -7,6 +7,9 @@ import {
   DRAG_START_THRESHOLD_SQ,
   DRAG_CLICK_SUPPRESS_RADIUS_SQ,
   DRAG_CLICK_SUPPRESS_TIMEOUT_MS,
+  SUITS,
+  SUIT_SYMBOL,
+  RED_SUITS,
 } from '@/shared/constants'
 import './freecell.css'
 
@@ -130,12 +133,13 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
         className="freecell-drag-preview"
         style={{ display: 'none' }}
       >
-        {dragSource?.area === 'tableau' && state.tableau[dragSource.pile]?.[dragSource.cardIndex] && (
-          <CardView
-            card={state.tableau[dragSource.pile][dragSource.cardIndex]}
-            isDragSource={false}
-          />
-        )}
+        {dragSource?.area === 'tableau' &&
+          state.tableau[dragSource.pile]?.slice(dragSource.cardIndex).map((card) => (
+            <div key={card.id} className="freecell-drag-preview-card">
+              <CardView card={card} isDragSource={false} />
+            </div>
+          ))
+        }
         {dragSource?.area === 'freecell' && state.freeCells[dragSource.cell] && (
           <CardView
             card={state.freeCells[dragSource.cell]!}
@@ -154,52 +158,43 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
       </div>
 
       <div className="freecell-top-row">
-        <div>
-          <div className="freecell-cells-label">Free Cells</div>
-          <div className="freecell-cells">
-            {state.freeCells.map((card, idx) => (
-              <div
-                key={idx}
-                data-drop-area="freecell"
-                data-drop-pile={idx}
-                className={`freecell-cell${selection?.location.area === 'freecell' && selection.location.cell === idx ? ' selected' : ''}`}
-                onClick={() => onEmptyClick('freecell', idx)}
-              >
-                {card
-                  ? <CardView
-                      card={card}
-                      isDragSource={dragSource?.area === 'freecell' && dragSource.cell === idx}
-                      onPointerDown={(e) => handleCardPointerDown({ area: 'freecell', cell: idx }, e)}
-                    />
-                  : <div style={emptySlotStyle} />
-                }
-              </div>
-            ))}
+        {state.freeCells.map((card, idx) => (
+          <div
+            key={idx}
+            data-drop-area="freecell"
+            data-drop-pile={idx}
+            className={`freecell-cell${selection?.location.area === 'freecell' && selection.location.cell === idx ? ' selected' : ''}`}
+            onClick={() => onEmptyClick('freecell', idx)}
+          >
+            {card
+              ? <CardView
+                  card={card}
+                  isDragSource={dragSource?.area === 'freecell' && dragSource.cell === idx}
+                  onPointerDown={(e) => handleCardPointerDown({ area: 'freecell', cell: idx }, e)}
+                />
+              : <div style={emptySlotStyle} />
+            }
           </div>
-        </div>
-
-        <div>
-          <div className="freecell-foundations-label">Foundations</div>
-          <div className="freecell-foundations">
-            {state.foundations.map((pile, idx) => (
-              <div
-                key={idx}
-                data-drop-area="foundation"
-                data-drop-pile={idx}
-                className={`freecell-foundation${selection?.location.area === 'foundation' && selection.location.pile === idx ? ' selected' : ''}`}
-                onClick={() => onEmptyClick('foundation', idx)}
-              >
-                {pile.length > 0
-                  ? <CardView
-                      card={pile[pile.length - 1]}
-                      isDragSource={dragSource?.area === 'foundation' && dragSource.pile === idx}
-                    />
-                  : <div style={emptySlotStyle} />
-                }
-              </div>
-            ))}
+        ))}
+        {state.foundations.map((pile, idx) => (
+          <div
+            key={idx}
+            data-drop-area="foundation"
+            data-drop-pile={idx}
+            className={`freecell-foundation${selection?.location.area === 'foundation' && selection.location.pile === idx ? ' selected' : ''}`}
+            onClick={() => onEmptyClick('foundation', idx)}
+          >
+            {pile.length > 0
+              ? <CardView
+                  card={pile[pile.length - 1]}
+                  isDragSource={dragSource?.area === 'foundation' && dragSource.pile === idx}
+                />
+              : <span className={`freecell-suit-hint${RED_SUITS.includes(SUITS[idx]) ? ' freecell-suit-hint--red' : ''}`}>
+                  {SUIT_SYMBOL[SUITS[idx]]}
+                </span>
+            }
           </div>
-        </div>
+        ))}
       </div>
 
       {isWon && (
@@ -222,7 +217,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
                     <div key={card.id} className={`freecell-column-card${isSelected ? ' selected' : ''}`}>
                       <CardView
                         card={card}
-                        isDragSource={dragSource?.area === 'tableau' && dragSource.pile === pileIdx && dragSource.cardIndex === cardIdx}
+                        isDragSource={dragSource?.area === 'tableau' && dragSource.pile === pileIdx && cardIdx >= dragSource.cardIndex}
                         onPointerDown={(e) => handleCardPointerDown(location, e)}
                       />
                     </div>

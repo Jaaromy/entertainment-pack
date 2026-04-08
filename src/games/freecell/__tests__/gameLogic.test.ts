@@ -113,32 +113,41 @@ describe('createInitialState', () => {
 })
 
 describe('canPlaceOnFoundation', () => {
-  it('allows Ace on empty foundation', () => {
-    expect(canPlaceOnFoundation(card(1, 'S'), [])).toBe(true)
+  // SUITS order: spades=0, hearts=1, diamonds=2, clubs=3
+
+  it('allows Ace of matching suit on empty foundation', () => {
+    expect(canPlaceOnFoundation(card(1, 'S'), [], 0)).toBe(true)  // spades → slot 0
+    expect(canPlaceOnFoundation(card(1, 'H'), [], 1)).toBe(true)  // hearts → slot 1
+    expect(canPlaceOnFoundation(card(1, 'D'), [], 2)).toBe(true)  // diamonds → slot 2
+    expect(canPlaceOnFoundation(card(1, 'C'), [], 3)).toBe(true)  // clubs → slot 3
+  })
+
+  it('rejects Ace of wrong suit on empty foundation', () => {
+    expect(canPlaceOnFoundation(card(1, 'H'), [], 0)).toBe(false) // hearts into spades slot
+    expect(canPlaceOnFoundation(card(1, 'S'), [], 2)).toBe(false) // spades into diamonds slot
   })
 
   it('rejects non-Ace on empty foundation', () => {
-    expect(canPlaceOnFoundation(card(5, 'H'), [])).toBe(false)
+    expect(canPlaceOnFoundation(card(5, 'S'), [], 0)).toBe(false)
+    expect(canPlaceOnFoundation(card(5, 'H'), [], 1)).toBe(false)
   })
 
-  it('allows next rank same suit', () => {
-    expect(canPlaceOnFoundation(card(2, 'S'), [card(1, 'S')])).toBe(true)
-    expect(canPlaceOnFoundation(card(5, 'H'), [card(4, 'H')])).toBe(true)
+  it('allows next rank same suit on non-empty foundation', () => {
+    expect(canPlaceOnFoundation(card(2, 'S'), [card(1, 'S')], 0)).toBe(true)
+    expect(canPlaceOnFoundation(card(5, 'H'), [card(4, 'H')], 1)).toBe(true)
   })
 
-  it('rejects different suit', () => {
-    expect(canPlaceOnFoundation(card(2, 'H'), [card(1, 'S')])).toBe(false)
+  it('rejects different suit on non-empty foundation', () => {
+    expect(canPlaceOnFoundation(card(2, 'H'), [card(1, 'S')], 0)).toBe(false)
   })
 
-  it('rejects wrong rank', () => {
-    expect(canPlaceOnFoundation(card(3, 'S'), [card(1, 'S')])).toBe(false)
+  it('rejects wrong rank on non-empty foundation', () => {
+    expect(canPlaceOnFoundation(card(3, 'S'), [card(1, 'S')], 0)).toBe(false)
   })
 
-  it('allows King on 13th card (13)', () => {
-    const aceToQueen = Array.from({ length: 12 }, (_, i) =>
-      card(i + 1, 'S'),
-    )
-    expect(canPlaceOnFoundation(card(13, 'S'), aceToQueen)).toBe(true)
+  it('allows King completing the foundation', () => {
+    const aceToQueen = Array.from({ length: 12 }, (_, i) => card(i + 1, 'S'))
+    expect(canPlaceOnFoundation(card(13, 'S'), aceToQueen, 0)).toBe(true)
   })
 })
 
@@ -246,6 +255,32 @@ describe('moveToFreeCell', () => {
     expect(result!.moves).toBe(1)
   })
 
+  it('accepts any card regardless of rank or suit — no placement rules', () => {
+    // King to free cell
+    const stateK = makeState({ tableau: [[card(13, 'S')]] })
+    expect(moveToFreeCell(stateK, 'tableau', 0)).not.toBeNull()
+    // Ace to free cell
+    const stateA = makeState({ tableau: [[card(1, 'H')]] })
+    expect(moveToFreeCell(stateA, 'tableau', 0)).not.toBeNull()
+    // Card that would be illegal on tableau still goes to free cell
+    const stateAny = makeState({ tableau: [[card(7, 'H'), card(6, 'H')]] }) // same color — invalid tableau sequence
+    const result = moveToFreeCell(stateAny, 'tableau', 0)
+    expect(result).not.toBeNull()
+    expect(result!.freeCells[0]).toEqual(card(6, 'H'))
+  })
+
+  it('uses first available free cell slot', () => {
+    const state = makeState({
+      freeCells: [card(1, 'S'), null, card(3, 'D'), null],
+      tableau: [[card(7, 'C')]],
+    })
+    const result = moveToFreeCell(state, 'tableau', 0)
+    expect(result).not.toBeNull()
+    // Slot 0 is occupied, slot 1 is first available
+    expect(result!.freeCells[1]).toEqual(card(7, 'C'))
+    expect(result!.freeCells[0]).toEqual(card(1, 'S')) // unchanged
+  })
+
   it('returns null if no empty free cells', () => {
     const state = makeState({
       freeCells: [card(1, 'S'), card(2, 'H'), card(3, 'D'), card(4, 'C')],
@@ -291,6 +326,18 @@ describe('moveFromFreeCell', () => {
     expect(result!.tableau[0]).toEqual([card(5, 'S'), card(3, 'H')])
   })
 
+  it('moves any card from free cell to empty tableau pile', () => {
+    // Kings, non-sequential cards — all go to empty pile
+    const state = makeState({
+      freeCells: [card(7, 'D'), null, null, null],
+      tableau: [[], [card(9, 'S')], [], [], [], [], [], []],
+    })
+    const result = moveFromFreeCell(state, 0, 'tableau', 0)
+    expect(result).not.toBeNull()
+    expect(result!.freeCells[0]).toBeNull()
+    expect(result!.tableau[0]).toEqual([card(7, 'D')])
+  })
+
   it('moves free cell card to valid foundation', () => {
     const state = makeState({
       freeCells: [card(1, 'S'), null, null, null],
@@ -301,13 +348,27 @@ describe('moveFromFreeCell', () => {
     expect(result!.foundations[0]).toEqual([card(1, 'S')])
   })
 
-  it('returns null if card cannot place', () => {
+  it('returns null if tableau card is wrong color or rank', () => {
     const state = makeState({
       freeCells: [card(7, 'H'), null, null, null],
       tableau: [[card(5, 'S')], [], [], [], [], [], [], []],
     })
-    const result = moveFromFreeCell(state, 0, 'tableau', 0)
-    expect(result).toBeNull()
+    expect(moveFromFreeCell(state, 0, 'tableau', 0)).toBeNull()
+  })
+
+  it('returns null if foundation suit does not match', () => {
+    // Slot 0 = spades; hearts Ace cannot start it
+    const stateEmpty = makeState({
+      freeCells: [card(1, 'H'), null, null, null],
+    })
+    expect(moveFromFreeCell(stateEmpty, 0, 'foundation', 0)).toBeNull()
+
+    // Wrong rank on non-empty foundation
+    const stateFull = makeState({
+      freeCells: [card(3, 'H'), null, null, null],
+      foundations: [[card(1, 'S'), card(2, 'S')]], // spades, not hearts
+    })
+    expect(moveFromFreeCell(stateFull, 0, 'foundation', 0)).toBeNull()
   })
 
   it('returns null if free cell is empty', () => {
@@ -317,6 +378,46 @@ describe('moveFromFreeCell', () => {
 })
 
 describe('moveTableauToTableau', () => {
+  it('returns null when source and destination are the same pile', () => {
+    const state = makeState({
+      tableau: [[card(5, 'S'), card(3, 'H')], [], [], [], [], [], [], []],
+    })
+    expect(moveTableauToTableau(state, 0, 1, 0)).toBeNull()
+  })
+
+  it('returns null for out-of-bounds card index', () => {
+    const state = makeState({
+      tableau: [[card(5, 'S')], [], [], [], [], [], [], []],
+    })
+    expect(moveTableauToTableau(state, 0, 5, 1)).toBeNull()
+    expect(moveTableauToTableau(state, 0, -1, 1)).toBeNull()
+  })
+
+  it('returns null if sequence head does not fit destination top card', () => {
+    // 5♥ (red) cannot go on 6♥ (red — same color)
+    const state = makeState({
+      tableau: [
+        [card(5, 'H')],
+        [card(6, 'H')],
+        [], [], [], [], [], [],
+      ],
+    })
+    expect(moveTableauToTableau(state, 0, 0, 1)).toBeNull()
+  })
+
+  it('returns null if internal sequence is not alternating color descending', () => {
+    // 5♥ on 4♦ — same color, invalid sequence
+    const state = makeState({
+      tableau: [
+        [card(5, 'H'), card(4, 'D')],
+        [card(6, 'S')],
+        [], [], [], [], [], [],
+      ],
+    })
+    // Moving from index 0 means moving both cards; the sequence 5♥-4♦ is invalid
+    expect(moveTableauToTableau(state, 0, 0, 1)).toBeNull()
+  })
+
   it('moves single card with supermove check', () => {
     const state = makeState({
       tableau: [

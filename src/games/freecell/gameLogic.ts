@@ -1,5 +1,5 @@
 import { Card, Suit, Rank } from '@/shared/types'
-import { RED_SUITS } from '@/shared/constants'
+import { RED_SUITS, SUITS } from '@/shared/constants'
 import { createShuffledDeck } from '@/shared/deck'
 import { FreeCellState, GameStatus } from './types'
 import {
@@ -31,9 +31,9 @@ export function createInitialState(seed: number): FreeCellState {
   }
 }
 
-export function canPlaceOnFoundation(card: Card, foundation: Card[]): boolean {
+export function canPlaceOnFoundation(card: Card, foundation: Card[], foundationIndex: number): boolean {
   if (foundation.length === 0) {
-    return card.rank === 1 // Ace
+    return card.rank === 1 && card.suit === SUITS[foundationIndex]
   }
   const topCard = foundation[foundation.length - 1]
   return card.suit === topCard.suit && card.rank === topCard.rank + 1
@@ -132,7 +132,7 @@ export function moveFromFreeCell(
   if (toArea === 'tableau') {
     valid = canPlaceOnTableau(card, state.tableau[toPile])
   } else if (toArea === 'foundation') {
-    valid = canPlaceOnFoundation(card, state.foundations[toPile])
+    valid = canPlaceOnFoundation(card, state.foundations[toPile], toPile)
   }
 
   if (!valid) return null
@@ -214,7 +214,7 @@ export function moveTableauToFoundation(
   if (pile.length === 0) return null
 
   const card = pile[pile.length - 1]
-  if (!canPlaceOnFoundation(card, state.foundations[foundationIndex])) {
+  if (!canPlaceOnFoundation(card, state.foundations[foundationIndex], foundationIndex)) {
     return null
   }
 
@@ -242,7 +242,7 @@ export function moveFreeCellToFoundation(
   const card = state.freeCells[cellIndex]
   if (!card) return null
 
-  if (!canPlaceOnFoundation(card, state.foundations[foundationIndex])) {
+  if (!canPlaceOnFoundation(card, state.foundations[foundationIndex], foundationIndex)) {
     return null
   }
 
@@ -264,7 +264,7 @@ export function moveFreeCellToFoundation(
 
 export function findFoundationTarget(state: FreeCellState, card: Card): number {
   for (let i = 0; i < FOUNDATION_SIZE; i++) {
-    if (canPlaceOnFoundation(card, state.foundations[i])) {
+    if (canPlaceOnFoundation(card, state.foundations[i], i)) {
       return i
     }
   }
