@@ -5,7 +5,9 @@ import KlondikeGame from './games/klondike/components/KlondikeGame'
 import CardGallery from './games/klondike/components/CardGallery'
 import StatsScreen from './games/klondike/components/StatsScreen'
 import BlackjackGame from './games/blackjack/components/BlackjackGame'
+import FreeCellGame from './games/freecell/FreeCellGame'
 import './games/klondike/klondike.css'
+import './games/freecell/freecell.css'
 
 type KlondikeView = 'game' | 'stats' | 'gallery'
 
@@ -30,6 +32,10 @@ export default function App() {
 
   if (route === '/blackjack') {
     return <BlackjackGame onHome={() => navigate('/')} />
+  }
+
+  if (route === '/freecell') {
+    return <FreeCellGame onHome={() => navigate('/')} />
   }
 
   return <LandingPage onSelect={navigate} />

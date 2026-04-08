@@ -70,6 +70,15 @@ export default function LandingPage({ onSelect }: LandingPageProps) {
     }
   } catch { /* ignore */ }
 
+  let freecellWins: number | null = null;
+  try {
+    const raw = localStorage.getItem('ep:fc:stats');
+    if (raw) {
+      const stats = JSON.parse(raw) as { gamesWon: number };
+      freecellWins = stats.gamesWon;
+    }
+  } catch { /* ignore */ }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -109,6 +118,12 @@ export default function LandingPage({ onSelect }: LandingPageProps) {
           description="Vegas-style blackjack. 4-deck shoe, 3:2 natural. Hit, stand, double, split."
           badge={bjBalance !== null ? `Balance: $${bjBalance}` : undefined}
           onPlay={() => onSelect('/blackjack')}
+        />
+        <GameCard
+          title="FreeCell"
+          description="Strategic solitaire. Four free cells and eight tableau columns. Most deals are solvable."
+          badge={freecellWins !== null ? `${freecellWins} wins` : undefined}
+          onPlay={() => onSelect('/freecell')}
         />
       </div>
     </div>

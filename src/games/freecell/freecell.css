@@ -1,0 +1,270 @@
+@import '../../shared/card.css';
+
+:root {
+  --gap: 8px;
+  --card-w: 72px;
+  --card-h: 100px;
+}
+
+.freecell-board {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 12px 16px 16px;
+  background: #007800;
+  user-select: none;
+  gap: 12px;
+  touch-action: manipulation;
+}
+
+.freecell-drag-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+/* ---- Menu bar ---- */
+.menu-bar {
+  background: rgba(0,0,0,0.25);
+  margin: -12px -16px 10px;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-score {
+  font-size: 0.88rem;
+  color: #d4f7d4;
+  padding-right: 4px;
+}
+
+.menu-bar-left {
+  display: flex;
+  align-items: center;
+}
+
+.menu-deal-button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 0.88rem;
+  padding: 3px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.menu-deal-button:hover:not(:disabled) {
+  background: rgba(255,255,255,0.2);
+}
+
+.menu-deal-button:disabled {
+  color: rgba(255,255,255,0.35);
+  cursor: default;
+}
+
+/* Prevent scroll/zoom on card touch — pointer-drag system requires this */
+.card {
+  touch-action: none;
+}
+
+.freecell-top-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.freecell-cells-container,
+.freecell-foundations-container {
+  display: flex;
+  gap: var(--gap);
+}
+
+.freecell-cells-label,
+.freecell-foundations-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.freecell-cells,
+.freecell-foundations {
+  display: flex;
+  gap: var(--gap);
+}
+
+.freecell-cell,
+.freecell-foundation {
+  width: var(--card-w);
+  height: var(--card-h);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.freecell-cell:hover,
+.freecell-foundation:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.freecell-cell.selected,
+.freecell-foundation.selected {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.freecell-tableau {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.freecell-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  --card-overlap: 2.5rem;
+  min-height: var(--card-h);
+}
+
+.freecell-column-card {
+  width: var(--card-w);
+  height: var(--card-h);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  position: relative;
+}
+
+.freecell-column-card:not(:last-child) {
+  margin-bottom: calc(var(--card-overlap) * -1);
+}
+
+.freecell-column-card:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.freecell-column-card.selected {
+  filter: brightness(0.85);
+  border: 2px solid #4ade80;
+  border-radius: 4px;
+}
+
+.freecell-empty-pile {
+  width: var(--card-w);
+  height: var(--card-h);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.freecell-empty-pile:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.freecell-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.freecell-button {
+  padding: 0.75rem 1.5rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.freecell-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.freecell-button:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.freecell-button.secondary {
+  background: #6b7280;
+}
+
+.freecell-button.secondary:hover {
+  background: #4b5563;
+}
+
+.freecell-stats {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+.freecell-status {
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #4ade80;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 1024px) {
+  .freecell-board {
+    gap: 12px;
+    padding: 12px 16px 16px;
+  }
+
+  .freecell-tableau {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .freecell-column-card:not(:last-child) {
+    margin-bottom: calc(var(--card-overlap) * -0.8);
+  }
+}
+
+@media (max-width: 640px) {
+  .freecell-board {
+    gap: 8px;
+    padding: 8px 12px 12px;
+  }
+
+  .freecell-top-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .freecell-tableau {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .freecell-column-card:not(:last-child) {
+    margin-bottom: calc(var(--card-overlap) * -0.6);
+  }
+
+  .freecell-controls {
+    gap: 0.5rem;
+  }
+
+  .freecell-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
