@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   loadFreeCellStats,
   recordFreeCellResult,
+  UNSOLVABLE_GAME,
 } from '../storage'
 
 function makeMockStorage() {
@@ -125,6 +126,31 @@ describe('recordFreeCellResult', () => {
     recordFreeCellResult(true)  // no moves arg
     const stats = loadFreeCellStats()
     expect(stats.leastMoves).toBe(50)
+  })
+})
+
+describe('recordFreeCellResult unsolvable game exemption', () => {
+  it('losing game #11982 does not reset the win streak', () => {
+    recordFreeCellResult(true, 50, 1)
+    recordFreeCellResult(true, 50, 2)
+    recordFreeCellResult(false, 10, UNSOLVABLE_GAME)
+    const stats = loadFreeCellStats()
+    expect(stats.currentStreak).toBe(2)
+    expect(stats.bestStreak).toBe(2)
+  })
+
+  it('losing game #11982 still increments gamesPlayed and not gamesWon', () => {
+    recordFreeCellResult(false, 10, UNSOLVABLE_GAME)
+    const stats = loadFreeCellStats()
+    expect(stats.gamesPlayed).toBe(1)
+    expect(stats.gamesWon).toBe(0)
+  })
+
+  it('losing any other game still resets the streak', () => {
+    recordFreeCellResult(true, 50, 1)
+    recordFreeCellResult(false, 10, 2)
+    const stats = loadFreeCellStats()
+    expect(stats.currentStreak).toBe(0)
   })
 })
 

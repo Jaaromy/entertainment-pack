@@ -240,6 +240,16 @@
   color: rgba(255, 220, 80, 0.85);
 }
 
+.freecell-unsolvable-notice {
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 220, 80, 0.95);
+  border: 1px solid rgba(255, 220, 80, 0.4);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 .freecell-status {
   text-align: center;
   font-size: 1.125rem;

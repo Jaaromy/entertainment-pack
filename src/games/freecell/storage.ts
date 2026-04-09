@@ -69,9 +69,14 @@ export function resetFreeCellStats(): FreeCellStats {
   return { ...DEFAULT_STATS }
 }
 
+// Game #11982 is the only unsolvable deal in the standard 32,000 Microsoft FreeCell games.
+// Losing it does not count against win streaks.
+export const UNSOLVABLE_GAME = 11982
+
 export function recordFreeCellResult(won: boolean, moves?: number, seed?: number): FreeCellStats {
   const stats = loadFreeCellStats()
-  const newStreak = won ? stats.currentStreak + 1 : 0
+  const streakExempt = !won && seed === UNSOLVABLE_GAME
+  const newStreak = won ? stats.currentStreak + 1 : streakExempt ? stats.currentStreak : 0
   const leastMoves =
     won && moves !== undefined
       ? stats.leastMoves === null

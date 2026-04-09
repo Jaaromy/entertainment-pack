@@ -11,6 +11,7 @@ import {
   SUIT_SYMBOL,
   RED_SUITS,
 } from '@/shared/constants'
+import { UNSOLVABLE_GAME } from './storage'
 import './freecell.css'
 
 interface FreeCellGameProps {
@@ -220,6 +221,12 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
         </div>
         <span className="menu-score">Game #{state.seed}</span>
       </div>
+
+      {state.seed === UNSOLVABLE_GAME && (
+        <div className="freecell-unsolvable-notice">
+          Game #11982 is the only unsolvable deal in FreeCell. A loss here will not break your win streak.
+        </div>
+      )}
 
       <div className="freecell-top-row">
         {state.freeCells.map((card, idx) => (
