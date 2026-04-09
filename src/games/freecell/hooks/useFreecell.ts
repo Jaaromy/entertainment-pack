@@ -114,8 +114,7 @@ export function useFreecell(): UseFreeCellReturn {
   function startGame(gameNumber: number): void {
     const cur = gameRef.current ? currentState(gameRef.current) : null
     if (cur && cur.status === 'playing' && !winRecordedRef.current) {
-      const currentStats = loadFreeCellStats()
-      const previouslyBeaten = cur.seed !== undefined && cur.seed in currentStats.gameBests
+      const previouslyBeaten = cur.seed !== undefined && cur.seed in stats.gameBests
       if (!previouslyBeaten) {
         record(false, cur.moves, cur.seed)
       }
