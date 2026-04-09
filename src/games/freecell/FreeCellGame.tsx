@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import CardView from '@/shared/components/CardView'
 import { emptySlotStyle } from '@/shared/spriteSheet'
 import { useFreecell } from './hooks/useFreecell'
@@ -29,6 +29,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
     startNewGame,
     startGameNumber,
     restartGame,
+    resetStats,
     devCheatWin,
   } = useFreecell()
 
@@ -41,6 +42,25 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
       return
     }
     startGameNumber(n)
+  }
+
+  const [gameMenuOpen, setGameMenuOpen] = useState(false)
+  const gameMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!gameMenuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (gameMenuRef.current && !gameMenuRef.current.contains(e.target as Node)) {
+        setGameMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [gameMenuOpen])
+
+  const pickGameMenu = (fn: () => void) => {
+    setGameMenuOpen(false)
+    fn()
   }
 
   const [dragSource, setDragSource] = useState<CardLocation | null>(null)
@@ -172,11 +192,30 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
 
       <div className="menu-bar">
         <div className="menu-bar-left">
+          <div className="menu-bar-inner" ref={gameMenuRef}>
+            <button
+              className={`menu-deal-button${gameMenuOpen ? ' menu-deal-button--open' : ''}`}
+              onClick={() => setGameMenuOpen(o => !o)}
+            >
+              Game
+            </button>
+            {gameMenuOpen && (
+              <div className="menu-dropdown">
+                <button className="menu-option" onClick={() => pickGameMenu(startNewGame)}>New Game</button>
+                <button className="menu-option" onClick={() => pickGameMenu(restartGame)}>Restart</button>
+                <button className="menu-option" onClick={() => pickGameMenu(handleSelectGame)}>Select Game</button>
+                <div className="menu-divider" />
+                <button className="menu-option" onClick={() => pickGameMenu(() => {
+                  if (window.confirm('Reset all FreeCell stats? This cannot be undone.')) resetStats()
+                })}>Reset Stats</button>
+                {onHome && <>
+                  <div className="menu-divider" />
+                  <button className="menu-option" onClick={() => pickGameMenu(onHome)}>All Games</button>
+                </>}
+              </div>
+            )}
+          </div>
           <button className="menu-deal-button" onClick={doUndo} disabled={!canUndo}>Undo</button>
-          <button className="menu-deal-button" onClick={restartGame}>Restart</button>
-          <button className="menu-deal-button" onClick={startNewGame}>New Game</button>
-          <button className="menu-deal-button" onClick={handleSelectGame}>Select Game</button>
-          {onHome && <button className="menu-deal-button" onClick={onHome}>All Games</button>}
           {devCheatWin && <button className="menu-deal-button menu-deal-button--dev" onClick={devCheatWin}>Dev: Win</button>}
         </div>
         <span className="menu-score">Game #{state.seed}</span>

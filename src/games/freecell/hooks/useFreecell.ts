@@ -21,6 +21,7 @@ import {
   loadFreeCellGame,
   saveFreeCellGame,
   recordFreeCellResult,
+  resetFreeCellStats,
   loadFreeCellStats,
   DEFAULT_STATS,
   FreeCellStats,
@@ -37,6 +38,7 @@ export interface UseFreeCellReturn {
   startNewGame(): void
   startGameNumber(n: number): void
   restartGame(): void
+  resetStats(): void
   devCheatWin?: () => void
 }
 
@@ -194,6 +196,7 @@ export function useFreecell(): UseFreeCellReturn {
     startNewGame: handleStartNewGame,
     startGameNumber: handleStartGameNumber,
     restartGame: handleRestartGame,
+    resetStats: () => setStats(resetFreeCellStats()),
     ...(import.meta.env.DEV ? { devCheatWin: handleCheatWin } : {}),
   }
 }

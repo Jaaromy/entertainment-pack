@@ -60,6 +60,15 @@ export function loadFreeCellStats(): FreeCellStats {
   }
 }
 
+export function resetFreeCellStats(): FreeCellStats {
+  try {
+    localStorage.setItem(STATS_KEY, JSON.stringify(DEFAULT_STATS))
+  } catch {
+    // Silently fail
+  }
+  return { ...DEFAULT_STATS }
+}
+
 export function recordFreeCellResult(won: boolean, moves?: number, seed?: number): FreeCellStats {
   const stats = loadFreeCellStats()
   const newStreak = won ? stats.currentStreak + 1 : 0
