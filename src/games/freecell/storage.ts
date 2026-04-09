@@ -9,7 +9,7 @@ export interface FreeCellStats {
   gameBests: Record<number, number>
 }
 
-const DEFAULT_STATS: FreeCellStats = {
+export const DEFAULT_STATS: FreeCellStats = {
   gamesPlayed: 0,
   gamesWon: 0,
   currentStreak: 0,

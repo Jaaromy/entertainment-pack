@@ -20,6 +20,7 @@ import {
   saveFreeCellGame,
   recordFreeCellResult,
   loadFreeCellStats,
+  DEFAULT_STATS,
   FreeCellStats,
 } from '../storage'
 
@@ -38,10 +39,10 @@ export interface UseFreeCellReturn {
 export function useFreecell(): UseFreeCellReturn {
   const gameRef = useRef<FreeCellWithHistory | null>(null)
   const [gameState, setGameState] = useState<FreeCellState | null>(null)
-  const [stats, setStats] = useState<FreeCellStats>(() => loadFreeCellStats())
+  const [stats, setStats] = useState<FreeCellStats>(DEFAULT_STATS)
   const winRecordedRef = useRef(false)
 
-  // Initialize game on mount
+  // Initialize game and stats on mount
   useEffect(() => {
     const saved = loadFreeCellGame()
     if (saved && saved.status === 'playing') {
@@ -50,6 +51,7 @@ export function useFreecell(): UseFreeCellReturn {
       gameRef.current = createMicrosoftGameHistory(randomGameNumber())
     }
     setGameState(currentState(gameRef.current))
+    setStats(loadFreeCellStats())
   }, [])
 
   function record(won: boolean, moves?: number, seed?: number): void {
