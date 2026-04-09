@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
+import { Card } from '@/shared/types'
+import { SUITS } from '@/shared/constants'
 import { FreeCellState, CardLocation, FreeCellWithHistory } from '../types'
 import {
   moveToFreeCell,
@@ -27,6 +29,7 @@ import {
 export interface UseFreeCellReturn {
   state: FreeCellState
   stats: FreeCellStats
+  previouslyBeaten: boolean
   canUndo: boolean
   onDrop(src: CardLocation, destArea: 'tableau' | 'freecell' | 'foundation', destPile: number): void
   onDoubleClick(loc: CardLocation): void
@@ -34,6 +37,7 @@ export interface UseFreeCellReturn {
   startNewGame(): void
   startGameNumber(n: number): void
   restartGame(): void
+  devCheatWin?: () => void
 }
 
 export function useFreecell(): UseFreeCellReturn {
@@ -156,9 +160,33 @@ export function useFreecell(): UseFreeCellReturn {
     winRecordedRef.current = false
   }
 
+  function handleCheatWin(): void {
+    if (!gameState || !gameRef.current) return
+    const allCards: Card[] = [
+      ...gameState.freeCells.filter((c): c is Card => c !== null),
+      ...gameState.tableau.flat(),
+      ...gameState.foundations.flat(),
+    ]
+    const foundations = SUITS.map((suit) =>
+      Array.from({ length: 13 }, (_, i) => allCards.find((c) => c.suit === suit && c.rank === i + 1)!)
+    )
+    const wonState: FreeCellState = {
+      ...gameState,
+      tableau: Array.from({ length: 8 }, () => []),
+      freeCells: [null, null, null, null],
+      foundations,
+      status: 'won',
+    }
+    commit(wonState)
+  }
+
+  const currentSeed = gameState?.seed
+  const previouslyBeaten = currentSeed !== undefined && currentSeed in stats.gameBests
+
   return {
     state: gameState || ({} as FreeCellState),
     stats,
+    previouslyBeaten,
     canUndo: !!gameRef.current && canUndoState(gameRef.current),
     onDrop: handleDrop,
     onDoubleClick: handleDoubleClick,
@@ -166,6 +194,7 @@ export function useFreecell(): UseFreeCellReturn {
     startNewGame: handleStartNewGame,
     startGameNumber: handleStartGameNumber,
     restartGame: handleRestartGame,
+    ...(import.meta.env.DEV ? { devCheatWin: handleCheatWin } : {}),
   }
 }
 

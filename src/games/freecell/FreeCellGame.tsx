@@ -21,6 +21,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
   const {
     state,
     stats,
+    previouslyBeaten,
     canUndo,
     onDrop,
     onDoubleClick,
@@ -28,6 +29,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
     startNewGame,
     startGameNumber,
     restartGame,
+    devCheatWin,
   } = useFreecell()
 
   function handleSelectGame() {
@@ -175,6 +177,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
           <button className="menu-deal-button" onClick={startNewGame}>New Game</button>
           <button className="menu-deal-button" onClick={handleSelectGame}>Select Game</button>
           {onHome && <button className="menu-deal-button" onClick={onHome}>All Games</button>}
+          {devCheatWin && <button className="menu-deal-button menu-deal-button--dev" onClick={devCheatWin}>Dev: Win</button>}
         </div>
         <span className="menu-score">Game #{state.seed}</span>
       </div>
@@ -197,7 +200,15 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
             }
           </div>
         ))}
-        <div className="freecell-separator">♣</div>
+        {previouslyBeaten ? (
+          <div className="freecell-separator freecell-separator--won">
+            <div className="freecell-medal">
+              <span className="freecell-medal-star">★</span>
+            </div>
+          </div>
+        ) : (
+          <div className="freecell-separator">♣</div>
+        )}
         {state.foundations.map((pile, idx) => (
           <div
             key={idx}
@@ -253,10 +264,10 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
 
       <div className="freecell-stats">
         <span>
-          Moves: {state.moves}
           {stats.gameBests[state.seed] !== undefined && (
-            <span className="freecell-stats-best"> (Best: {stats.gameBests[state.seed]})</span>
+            <span className="freecell-stats-best">Previous Best: {stats.gameBests[state.seed]} | </span>
           )}
+          Moves: {state.moves}
         </span>
         {stats.gamesPlayed > 0 && (
           <span>Win%: {Math.round((stats.gamesWon / stats.gamesPlayed) * 100)}%</span>
