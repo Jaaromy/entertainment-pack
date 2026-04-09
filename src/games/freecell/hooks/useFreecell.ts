@@ -5,6 +5,8 @@ import {
   moveFromFreeCell,
   moveTableauToTableau,
   moveTableauToFoundation,
+  canAutoComplete,
+  autoCompleteStep,
 } from '../gameLogic'
 import {
   createMicrosoftGameHistory,
@@ -64,6 +66,19 @@ export function useFreecell(): UseFreeCellReturn {
     record(true, gameState.moves, gameState.seed)
   }, [gameState])
 
+  // Auto-complete: when all tableau piles are sorted, drain cards to foundation
+  // one at a time with a short delay so the moves are visible.
+  useEffect(() => {
+    if (!gameState || !canAutoComplete(gameState)) return
+    const timer = setTimeout(() => {
+      if (!gameRef.current) return
+      const state = currentState(gameRef.current)
+      const next = autoCompleteStep(state)
+      if (next) commit(next)
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [gameState])
+
   function commit(newState: FreeCellState): void {
     if (!gameRef.current) return
     gameRef.current = pushState(gameRef.current, newState)
@@ -99,7 +114,11 @@ export function useFreecell(): UseFreeCellReturn {
   function startGame(gameNumber: number): void {
     const cur = gameRef.current ? currentState(gameRef.current) : null
     if (cur && cur.status === 'playing' && !winRecordedRef.current) {
-      record(false, cur.moves, cur.seed)
+      const currentStats = loadFreeCellStats()
+      const previouslyBeaten = cur.seed !== undefined && cur.seed in currentStats.gameBests
+      if (!previouslyBeaten) {
+        record(false, cur.moves, cur.seed)
+      }
     }
     gameRef.current = createMicrosoftGameHistory(gameNumber)
     const state = currentState(gameRef.current)

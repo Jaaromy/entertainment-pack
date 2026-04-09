@@ -371,6 +371,48 @@ function isSafeToAutoMove(state: FreeCellState, card: Card): boolean {
   return card.rank <= minOppositeRank + AUTO_MOVE_THRESHOLD
 }
 
+/**
+ * Returns true when every tableau pile is in valid sorted order (descending rank,
+ * alternating color). When this holds, no decisions remain — the game can drain
+ * itself to the foundations automatically.
+ */
+export function canAutoComplete(state: FreeCellState): boolean {
+  if (state.status !== 'playing') return false
+  return state.tableau.every((pile) => {
+    for (let i = 1; i < pile.length; i++) {
+      if (!canPlaceOnTableau(pile[i], [pile[i - 1]])) return false
+    }
+    return true
+  })
+}
+
+/**
+ * Moves one card from a tableau top or free cell to its foundation.
+ * Returns null if no such move exists.
+ */
+export function autoCompleteStep(state: FreeCellState): FreeCellState | null {
+  // Try tableau tops
+  for (let i = 0; i < TABLEAU_SIZE; i++) {
+    const pile = state.tableau[i]
+    if (pile.length === 0) continue
+    const card = pile[pile.length - 1]
+    const foundationIndex = findFoundationTarget(state, card)
+    if (foundationIndex !== -1) {
+      return moveTableauToFoundation(state, i, foundationIndex)
+    }
+  }
+  // Try free cells
+  for (let i = 0; i < FREE_CELL_COUNT; i++) {
+    const card = state.freeCells[i]
+    if (!card) continue
+    const foundationIndex = findFoundationTarget(state, card)
+    if (foundationIndex !== -1) {
+      return moveFreeCellToFoundation(state, i, foundationIndex)
+    }
+  }
+  return null
+}
+
 function updateStatus(state: FreeCellState): FreeCellState {
   // Check if won: all foundations have 13 cards
   const won = state.foundations.every((f) => f.length === 13)

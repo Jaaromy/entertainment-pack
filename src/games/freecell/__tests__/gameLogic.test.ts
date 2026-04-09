@@ -15,6 +15,8 @@ import {
   moveFreeCellToFoundation,
   findFoundationTarget,
   autoMoveToFoundation,
+  canAutoComplete,
+  autoCompleteStep,
 } from '../gameLogic'
 import { FreeCellState } from '../types'
 
@@ -781,5 +783,144 @@ describe('createMicrosoftGame', () => {
     const col0_g1 = g1.tableau[0]!.map((c) => c.id).join(',')
     const col0_g2 = g2.tableau[0]!.map((c) => c.id).join(',')
     expect(col0_g1).not.toBe(col0_g2)
+  })
+})
+
+describe('canAutoComplete', () => {
+  it('returns true when all tableau piles are in valid sorted order', () => {
+    // 5♠ on 6♥ (alternating color, descending rank) — valid sequence
+    const state = makeState({
+      tableau: [
+        [card(6, 'H'), card(5, 'S')],
+        [card(4, 'H'), card(3, 'S')],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    })
+    expect(canAutoComplete(state)).toBe(true)
+  })
+
+  it('returns false when a tableau pile has an out-of-order card', () => {
+    // 5♠ on 6♠ — same color, not valid
+    const state = makeState({
+      tableau: [
+        [card(6, 'S'), card(5, 'S')],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    })
+    expect(canAutoComplete(state)).toBe(false)
+  })
+
+  it('returns false when status is won', () => {
+    const state = makeState({ status: 'won' })
+    expect(canAutoComplete(state)).toBe(false)
+  })
+
+  it('returns true for empty tableau', () => {
+    const state = makeState()
+    expect(canAutoComplete(state)).toBe(true)
+  })
+
+  it('returns false when a card is blocked by wrong rank', () => {
+    // 3♠ on 6♥ — rank gap, not consecutive
+    const state = makeState({
+      tableau: [
+        [card(6, 'H'), card(3, 'S')],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    })
+    expect(canAutoComplete(state)).toBe(false)
+  })
+})
+
+describe('autoCompleteStep', () => {
+  it('moves a tableau top card to foundation when possible', () => {
+    // A♠ on top of tableau, spades foundation (index 0) empty
+    const state = makeState({
+      tableau: [
+        [card(2, 'H'), card(1, 'S')],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    })
+    const next = autoCompleteStep(state)
+    expect(next).not.toBeNull()
+    expect(next!.foundations[0]).toHaveLength(1) // spades is foundation index 0
+    expect(next!.foundations[0][0].rank).toBe(1)
+    expect(next!.moves).toBe(1)
+  })
+
+  it('moves a free cell card to foundation when possible', () => {
+    // A♠ in free cell, spades foundation (index 0) empty
+    const state = makeState({
+      freeCells: [card(1, 'S'), null, null, null],
+    })
+    const next = autoCompleteStep(state)
+    expect(next).not.toBeNull()
+    expect(next!.freeCells[0]).toBeNull()
+    expect(next!.foundations[0]).toHaveLength(1) // spades is index 0
+  })
+
+  it('returns null when no card can go to foundation', () => {
+    // Only card is 5♣ and foundation is empty (needs A♣ first)
+    const state = makeState({
+      tableau: [
+        [card(5, 'C')],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ],
+    })
+    const next = autoCompleteStep(state)
+    expect(next).toBeNull()
+  })
+
+  it('drains a fully sorted tableau to foundations when called repeatedly', () => {
+    // Single pile: A♣, A♥, A♦, A♠ — all aces, all go directly
+    const state = makeState({
+      tableau: [
+        [card(1, 'C')],
+        [card(1, 'H')],
+        [card(1, 'D')],
+        [card(1, 'S')],
+        [],
+        [],
+        [],
+        [],
+      ],
+    })
+    let cur = state
+    for (let i = 0; i < 4; i++) {
+      const next = autoCompleteStep(cur)
+      expect(next).not.toBeNull()
+      cur = next!
+    }
+    expect(cur.tableau.every((p) => p.length === 0)).toBe(true)
+    expect(cur.foundations.reduce((sum, f) => sum + f.length, 0)).toBe(4)
   })
 })
