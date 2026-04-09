@@ -53,8 +53,7 @@ export function useFreecell(): UseFreeCellReturn {
   }, [])
 
   function record(won: boolean, moves?: number, seed?: number): void {
-    recordFreeCellResult(won, moves, seed)
-    setStats(loadFreeCellStats())
+    setStats(recordFreeCellResult(won, moves, seed))
   }
 
   // Record win when status changes to 'won'

@@ -60,30 +60,31 @@ export function loadFreeCellStats(): FreeCellStats {
   }
 }
 
-export function recordFreeCellResult(won: boolean, moves?: number, seed?: number): void {
+export function recordFreeCellResult(won: boolean, moves?: number, seed?: number): FreeCellStats {
+  const stats = loadFreeCellStats()
+  const newStreak = won ? stats.currentStreak + 1 : 0
+  const leastMoves =
+    won && moves !== undefined
+      ? stats.leastMoves === null
+        ? moves
+        : Math.min(stats.leastMoves, moves)
+      : stats.leastMoves
+  const gameBests = { ...stats.gameBests }
+  if (won && moves !== undefined && seed !== undefined) {
+    gameBests[seed] = Math.min(gameBests[seed] ?? Infinity, moves)
+  }
+  const next: FreeCellStats = {
+    gamesPlayed: stats.gamesPlayed + 1,
+    gamesWon: won ? stats.gamesWon + 1 : stats.gamesWon,
+    currentStreak: newStreak,
+    bestStreak: Math.max(stats.bestStreak, newStreak),
+    leastMoves,
+    gameBests,
+  }
   try {
-    const stats = loadFreeCellStats()
-    const newStreak = won ? stats.currentStreak + 1 : 0
-    const leastMoves =
-      won && moves !== undefined
-        ? stats.leastMoves === null
-          ? moves
-          : Math.min(stats.leastMoves, moves)
-        : stats.leastMoves
-    const gameBests = { ...stats.gameBests }
-    if (won && moves !== undefined && seed !== undefined) {
-      gameBests[seed] = Math.min(gameBests[seed] ?? Infinity, moves)
-    }
-    const next: FreeCellStats = {
-      gamesPlayed: stats.gamesPlayed + 1,
-      gamesWon: won ? stats.gamesWon + 1 : stats.gamesWon,
-      currentStreak: newStreak,
-      bestStreak: Math.max(stats.bestStreak, newStreak),
-      leastMoves,
-      gameBests,
-    }
     localStorage.setItem(STATS_KEY, JSON.stringify(next))
   } catch {
     // Silently fail
   }
+  return next
 }
