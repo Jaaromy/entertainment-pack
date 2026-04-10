@@ -22,6 +22,10 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
     canDoubleDownHand,
     isPlayerActive,
     cardSize,
+    learningMode,
+    strategyFeedback,
+    sessionStats,
+    countInfo,
     onPlaceBet,
     onClearBet,
     onDeal,
@@ -49,7 +53,7 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
   const showDealerTotal = state.phase === 'settlement' || state.phase === 'dealer';
   const isSettled = state.phase === 'settlement';
   const isBetting = state.phase === 'betting';
-  const canDeal = (isBetting && state.currentBet > 0 && state.currentBet <= state.balance) || isSettled;
+  const canDeal = (isBetting || isSettled) && state.currentBet > 0 && state.currentBet <= state.balance;
 
   const scoreDisplay = `$${state.balance}`;
 
@@ -70,6 +74,11 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
             style={{ width: `${100 - (state.dealtCount / state.shoeSize) * 100}%` }}
           />
         </div>
+        {import.meta.env.DEV && (
+          <span className="menu-score" style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+            {state.shoeSize - state.dealtCount} cards
+          </span>
+        )}
         <span className="menu-score">{scoreDisplay}</span>
       </div>
 
@@ -81,6 +90,17 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
             dealerHand={state.dealerHand}
             showTotal={showDealerTotal}
           />
+
+          {/* Strategy feedback banner (learning mode, after each player action) */}
+          {learningMode && strategyFeedback && (
+            <div className={`bj-strategy-feedback bj-strategy-feedback--${strategyFeedback.correct ? 'correct' : 'incorrect'}`}>
+              {strategyFeedback.correct
+                ? `✓ Correct — Basic Strategy: ${strategyFeedback.optimalAction.toUpperCase()}`
+                : `✗ You chose ${strategyFeedback.playerAction.toUpperCase()} — Basic Strategy: ${strategyFeedback.optimalAction.toUpperCase()}`
+              }
+            </div>
+          )}
+
           <div className="bj-player-zone">
             {state.playerHands.map((hand, i) => (
               <PlayerHand
@@ -96,6 +116,16 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
 
         {/* Controls footer */}
         <div className="bj-controls">
+          {/* Card count panel (learning mode) */}
+          {learningMode && (
+            <div className="bj-count-panel">
+              <span>Running: {countInfo.runningCount > 0 ? '+' : ''}{countInfo.runningCount}</span>
+              <span>True: {countInfo.trueCount > 0 ? '+' : ''}{countInfo.trueCount}</span>
+              <span>Decks: {countInfo.decksRemaining.toFixed(1)}</span>
+              <span className="bj-count-panel__divider" />
+              <span>Strategy: {sessionStats.correct}/{sessionStats.correct + sessionStats.incorrect}</span>
+            </div>
+          )}
           <BettingPanel
             isActive={isBetting || isSettled}
             canDeal={canDeal}
@@ -128,7 +158,8 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
         <BlackjackOptionsDialog
           options={state.options}
           cardSize={cardSize}
-          onConfirm={(opts, size) => { onSaveOptions(opts, size); setShowOptions(false); }}
+          learningMode={learningMode}
+          onConfirm={(opts, size, lm) => { onSaveOptions(opts, size, lm); setShowOptions(false); }}
           onCancel={() => setShowOptions(false)}
         />
       )}

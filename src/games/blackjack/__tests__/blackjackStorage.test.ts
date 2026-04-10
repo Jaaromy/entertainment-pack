@@ -146,7 +146,7 @@ describe('loadBlackjackSettings / saveBlackjackSettings', () => {
   });
 
   it('round-trips settings', () => {
-    saveBlackjackSettings({ defaultBet: 50, options: { deckCount: 6 }, cardSize: 'large' });
+    saveBlackjackSettings({ defaultBet: 50, options: { deckCount: 6 }, cardSize: 'large', learningMode: false });
     const loaded = loadBlackjackSettings();
     expect(loaded?.defaultBet).toBe(50);
     expect(loaded?.options.deckCount).toBe(6);

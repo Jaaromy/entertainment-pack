@@ -4,21 +4,24 @@ import type { BlackjackOptions } from '../types';
 interface BlackjackOptionsDialogProps {
   options: BlackjackOptions;
   cardSize: 'normal' | 'large';
-  onConfirm: (options: Partial<BlackjackOptions>, cardSize: 'normal' | 'large') => void;
+  learningMode: boolean;
+  onConfirm: (options: Partial<BlackjackOptions>, cardSize: 'normal' | 'large', learningMode: boolean) => void;
   onCancel: () => void;
 }
 
 export default function BlackjackOptionsDialog({
   options,
   cardSize,
+  learningMode,
   onConfirm,
   onCancel,
 }: BlackjackOptionsDialogProps) {
   const [deckCount, setDeckCount] = useState<number>(options.deckCount);
   const [size, setSize] = useState(cardSize);
+  const [lm, setLm] = useState(learningMode);
 
   const handleConfirm = () => {
-    onConfirm({ deckCount }, size);
+    onConfirm({ deckCount }, size, lm);
   };
 
   return (
@@ -56,6 +59,17 @@ export default function BlackjackOptionsDialog({
               Large
             </label>
           </div>
+        </div>
+
+        <div className="dialog-field">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={lm}
+              onChange={e => setLm(e.target.checked)}
+            />
+            Learning Mode (strategy hints + card count)
+          </label>
         </div>
 
         <div className="dialog-actions">

@@ -87,6 +87,8 @@ export interface BlackjackState {
   currentBet: number;
   shoeSeed: number;
   options: BlackjackOptions;
+  /** Hi-Lo running count; resets to 0 on shoe reshuffle */
+  runningCount: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,4 +124,5 @@ export interface BlackjackStoredSettings {
   defaultBet: number;
   options: Partial<BlackjackOptions>;
   cardSize: 'normal' | 'large';
+  learningMode: boolean;
 }
