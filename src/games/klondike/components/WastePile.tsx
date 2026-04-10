@@ -51,6 +51,7 @@ function WastePile({
             key={top.id}
             card={top}
             isDragSource={isDragSrc}
+            data-card-loc={JSON.stringify(WASTE_LOC)}
             style={{ position: 'absolute', top: 0, left: 0 }}
             onClick={() => onCardClick(WASTE_LOC)}
             onDoubleClick={() => onCardDoubleClick(WASTE_LOC)}
@@ -88,6 +89,7 @@ function WastePile({
               card={card}
               isDragSource={isDragSrc && isTop}
               style={{ position: 'absolute', top: 0, left, ...(!isTop ? { cursor: 'default' } : {}) }}
+              data-card-loc={isTop ? JSON.stringify(WASTE_LOC) : undefined}
               onClick={isTop ? () => onCardClick(WASTE_LOC) : undefined}
               onDoubleClick={isTop ? () => onCardDoubleClick(WASTE_LOC) : undefined}
               onPointerDown={isTop ? e => onPointerDown(WASTE_LOC, e) : undefined}

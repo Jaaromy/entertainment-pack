@@ -7,6 +7,8 @@ import {
   moveFromFreeCell,
   moveTableauToTableau,
   moveTableauToFoundation,
+  moveFreeCellToFoundation,
+  findFoundationTarget,
   canAutoComplete,
   autoCompleteStep,
 } from '../gameLogic'
@@ -34,6 +36,7 @@ export interface UseFreeCellReturn {
   canUndo: boolean
   onDrop(src: CardLocation, destArea: 'tableau' | 'freecell' | 'foundation', destPile: number): void
   onDoubleClick(loc: CardLocation): void
+  onRightClick(loc: CardLocation): void
   doUndo(): void
   startNewGame(): void
   startGameNumber(n: number): void
@@ -151,6 +154,28 @@ export function useFreecell(): UseFreeCellReturn {
     if (newState) commit(newState)
   }
 
+  function handleRightClick(loc: CardLocation): void {
+    if (!gameState) return
+    let card: Card | null = null
+    if (loc.area === 'tableau') {
+      const pile = gameState.tableau[loc.pile]
+      if (loc.cardIndex !== pile.length - 1) return
+      card = pile[pile.length - 1] ?? null
+    } else if (loc.area === 'freecell') {
+      card = gameState.freeCells[loc.cell]
+    }
+    if (!card) return
+    const foundationIndex = findFoundationTarget(gameState, card)
+    if (foundationIndex === -1) return
+    let newState: FreeCellState | null = null
+    if (loc.area === 'tableau') {
+      newState = moveTableauToFoundation(gameState, loc.pile, foundationIndex)
+    } else if (loc.area === 'freecell') {
+      newState = moveFreeCellToFoundation(gameState, loc.cell, foundationIndex)
+    }
+    if (newState) commit(newState)
+  }
+
   function handleRestartGame(): void {
     const cur = gameRef.current ? currentState(gameRef.current) : null
     if (!cur) return
@@ -192,6 +217,7 @@ export function useFreecell(): UseFreeCellReturn {
     canUndo: !!gameRef.current && canUndoState(gameRef.current),
     onDrop: handleDrop,
     onDoubleClick: handleDoubleClick,
+    onRightClick: handleRightClick,
     doUndo: handleUndo,
     startNewGame: handleStartNewGame,
     startGameNumber: handleStartGameNumber,

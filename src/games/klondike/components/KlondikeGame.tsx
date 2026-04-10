@@ -180,8 +180,21 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
     doAutoComplete();
   };
 
+  const handleBoardContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    const cardEl = target.closest<HTMLElement>('[data-card-loc]');
+    if (cardEl) {
+      const loc = JSON.parse(cardEl.dataset.cardLoc!) as CardLocation;
+      onCardDoubleClick(loc);
+    } else {
+      doAutoComplete();
+    }
+  };
+
   return (
-    <div className="klondike-game game-container" onDoubleClick={handleBoardDoubleClick}>
+    <div className="klondike-game game-container" onDoubleClick={handleBoardDoubleClick} onContextMenu={handleBoardContextMenu}>
       <div
         className={`klondike-board${cardSize === 'large' ? ' klondike-board--large' : ''}`}
       >

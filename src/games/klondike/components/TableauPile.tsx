@@ -87,6 +87,7 @@ function TableauPile({
               zIndex: i + 1,
               ...(isFlippable ? { cursor: 'pointer' } : {}),
             }}
+            data-card-loc={card.faceUp ? JSON.stringify(loc) : undefined}
             onClick={() => onCardClick(loc)}
             onDoubleClick={() => onCardDoubleClick(loc)}
             onPointerDown={card.faceUp ? e => onPointerDown(loc, e) : undefined}

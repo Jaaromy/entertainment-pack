@@ -26,6 +26,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
     canUndo,
     onDrop,
     onDoubleClick,
+    onRightClick,
     doUndo,
     startNewGame,
     startGameNumber,
@@ -241,6 +242,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
                   card={card}
                   isDragSource={dragSource?.area === 'freecell' && dragSource.cell === idx}
                   onPointerDown={(e) => handleCardPointerDown({ area: 'freecell', cell: idx }, e)}
+                  onContextMenu={(e) => { e.preventDefault(); onRightClick({ area: 'freecell', cell: idx }) }}
                 />
               : <div style={emptySlotStyle} />
             }
@@ -294,6 +296,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
                       key={card.id}
                       className={`freecell-column-card${isPeeked ? ' freecell-column-card--peeked' : ''}`}
                       onDoubleClick={isTopCard ? () => onDoubleClick(location) : undefined}
+                      onContextMenu={isTopCard ? (e) => { e.preventDefault(); onRightClick(location) } : (e) => e.preventDefault()}
                     >
                       <CardView
                         card={card}

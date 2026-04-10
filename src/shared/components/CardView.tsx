@@ -7,9 +7,11 @@ interface CardViewProps {
   isDragSource: boolean;
   draggable?: boolean;
   style?: React.CSSProperties;
+  'data-card-loc'?: string;
   onClick?: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onContextMenu?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 function CardView({
@@ -17,9 +19,11 @@ function CardView({
   isDragSource,
   draggable,
   style,
+  'data-card-loc': dataCardLoc,
   onClick,
   onDoubleClick,
   onPointerDown,
+  onContextMenu,
 }: CardViewProps) {
   const classes = [
     'card',
@@ -38,7 +42,9 @@ function CardView({
       draggable={draggable}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      data-card-loc={dataCardLoc}
       onPointerDown={onPointerDown}
+      onContextMenu={onContextMenu}
     />
   );
 }
