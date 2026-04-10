@@ -8,6 +8,9 @@
   /* Card width shrinks on narrow screens; max 5 cards shown side by side (split hand) */
   --card-w: min(72px, calc((100vw - 32px) / 5));
   --card-h: calc(var(--card-w) * 100 / 72);
+  /* Spacing ratios (fraction of card width) */
+  --bj-card-gap-ratio: 0.55;
+  --bj-card-overlap-ratio: 0.35;
 }
 
 .bj-game--large {
@@ -79,6 +82,7 @@
   gap: 16px;
   width: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* =========================================================
@@ -132,7 +136,7 @@
 
 .bj-card-wrapper {
   position: relative;
-  margin-right: calc(var(--card-w) * 0.55);
+  margin-right: calc(var(--card-w) * var(--bj-card-gap-ratio));
 }
 
 .bj-card-wrapper:last-child {
@@ -141,6 +145,15 @@
 
 .bj-card-wrapper .card {
   position: relative;
+}
+
+/* Player hand card overlap */
+.bj-player-hand .bj-card-wrapper {
+  margin-right: calc(var(--card-w) * -1 * var(--bj-card-overlap-ratio));
+}
+
+.bj-player-hand .bj-card-wrapper:last-child {
+  margin-right: 0;
 }
 
 /* =========================================================
@@ -340,4 +353,36 @@
 
 .bj-btn--action:hover:not(:disabled) {
   background: rgba(255,255,255,0.28);
+}
+
+/* Learning Mode */
+.bj-strategy-feedback {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: center;
+  color: #fff;
+  margin: 4px 0;
+  align-self: center;
+}
+.bj-strategy-feedback--correct   { background: rgba(0, 160, 60, 0.85); }
+.bj-strategy-feedback--incorrect { background: rgba(200, 20, 20, 0.85); }
+
+.bj-count-panel {
+  display: flex;
+  gap: 20px;
+  padding: 4px 12px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 6px;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  align-self: center;
+}
+
+.bj-count-panel__divider {
+  width: 1px;
+  background: rgba(255,255,255,0.25);
+  align-self: stretch;
 }
