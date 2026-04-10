@@ -9,7 +9,23 @@ import type {
   HandResult,
   DealerHand,
 } from './types';
-import { BLACKJACK_INITIAL_BALANCE, DEFAULT_OPTIONS } from './constants';
+import {
+  BLACKJACK_INITIAL_BALANCE,
+  DEFAULT_OPTIONS,
+  ACE_RANK,
+  ACE_HIGH,
+  TEN_VALUE,
+  BLACKJACK_VALUE,
+  INITIAL_HAND_SIZE,
+  DEALER_STAND_VALUE,
+  PAYOUT_NATURAL_3_2,
+  PAYOUT_NATURAL_6_5,
+  WIN_PAYOUT_MULTIPLIER,
+  HI_LO_LOW_MIN,
+  HI_LO_LOW_MAX,
+  HI_LO_NEUTRAL_MIN,
+  HI_LO_NEUTRAL_MAX,
+} from './constants';
 
 // ---------------------------------------------------------------------------
 // Hand value
@@ -29,26 +45,38 @@ export function handValue(cards: Card[]): HandValue {
 
   for (const card of cards) {
     const r = card.rank;
-    if (r === 1) {
+    if (r === ACE_RANK) {
       aces++;
-      total += 11;
+      total += ACE_HIGH;
     } else {
-      total += Math.min(r, 10);
+      total += Math.min(r, TEN_VALUE);
     }
   }
 
   // Demote Aces from 11 → 1 as needed
-  while (total > 21 && aces > 0) {
-    total -= 10;
+  while (total > BLACKJACK_VALUE && aces > 0) {
+    total -= TEN_VALUE;
     aces--;
   }
 
   return {
     value: total,
     isSoft: aces > 0,
-    isBust: total > 21,
-    isBlackjack: cards.length === 2 && total === 21,
+    isBust: total > BLACKJACK_VALUE,
+    isBlackjack: cards.length === INITIAL_HAND_SIZE && total === BLACKJACK_VALUE,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Hi-Lo card counting
+// ---------------------------------------------------------------------------
+
+/** Returns the Hi-Lo count value for a single card. */
+export function hiLoValue(card: Card): number {
+  const r = card.rank;
+  if (r >= HI_LO_LOW_MIN && r <= HI_LO_LOW_MAX) return 1;         // ranks 2–6 → +1
+  if (r >= HI_LO_NEUTRAL_MIN && r <= HI_LO_NEUTRAL_MAX) return 0; // ranks 7–9 →  0
+  return -1;                                                         // Ace (rank 1) and 10–K → -1
 }
 
 // ---------------------------------------------------------------------------
@@ -114,6 +142,7 @@ export function createInitialState(
     currentBet: 0,
     shoeSeed: seed,
     options,
+    runningCount: 0,
   };
 }
 
@@ -177,6 +206,9 @@ export function deal(state: BlackjackState): BlackjackState | null {
     holeCardRevealed: false,
   };
 
+  // Count visible cards: p1, d1, p2 are face-up; d2 (hole card) is hidden
+  const runningCount = state.runningCount + hiLoValue(p1) + hiLoValue(d1) + hiLoValue(p2);
+
   const next: BlackjackState = {
     ...state,
     shoe,
@@ -186,6 +218,7 @@ export function deal(state: BlackjackState): BlackjackState | null {
     activeHandIndex: 0,
     dealerHand,
     phase: 'playing',
+    runningCount,
   };
 
   // Both blackjack or player blackjack (dealer will be checked in settlement)
@@ -218,6 +251,7 @@ export function hit(state: BlackjackState): BlackjackState | null {
     shoe,
     dealtCount: state.dealtCount + 1,
     playerHands: hands,
+    runningCount: state.runningCount + hiLoValue(card),
   };
 
   if (newStatus === 'bust') {
@@ -243,7 +277,7 @@ export function doubleDown(state: BlackjackState): BlackjackState | null {
   if (state.phase !== 'playing') return null;
   const hand = state.playerHands[state.activeHandIndex];
   if (!hand || hand.status !== 'active') return null;
-  if (hand.cards.length !== 2) return null;
+  if (hand.cards.length !== INITIAL_HAND_SIZE) return null;
   if (!canDoubleDown(state)) return null;
 
   const [card, newShoe] = dealCard(state.shoe, true);
@@ -265,6 +299,7 @@ export function doubleDown(state: BlackjackState): BlackjackState | null {
     dealtCount: state.dealtCount + 1,
     balance: state.balance - hand.bet,
     playerHands: hands,
+    runningCount: state.runningCount + hiLoValue(card),
   });
 }
 
@@ -290,7 +325,7 @@ export function split(state: BlackjackState): BlackjackState | null {
   const c1 = draw();
   const c2 = draw();
 
-  const isAce = cardA.rank === 1;
+  const isAce = cardA.rank === ACE_RANK;
 
   // Aces: each hand gets 1 card and auto-stands (standard rule)
   const hand1: Hand = {
@@ -323,6 +358,7 @@ export function split(state: BlackjackState): BlackjackState | null {
     dealtCount,
     balance: state.balance - hand.bet,
     playerHands: hands,
+    runningCount: state.runningCount + hiLoValue(c1) + hiLoValue(c2),
   };
 
   // If Aces were split (both hands are standing), advance immediately
@@ -356,8 +392,14 @@ export function advanceHand(state: BlackjackState): BlackjackState {
 
 function revealHoleCard(state: BlackjackState): BlackjackState {
   const cards = state.dealerHand.cards.map(c => ({ ...c, faceUp: true }));
+  // Hole card is index 1 (dealt second, face-down); count it now that it's revealed
+  const holeCard = state.dealerHand.cards[1];
+  const runningCount = holeCard
+    ? state.runningCount + hiLoValue(holeCard)
+    : state.runningCount;
   return {
     ...state,
+    runningCount,
     dealerHand: { cards, holeCardRevealed: true },
   };
 }
@@ -367,12 +409,13 @@ export function playDealer(state: BlackjackState): BlackjackState {
   let dealerCards = state.dealerHand.cards;
   let shoe = state.shoe;
   let dealtCount = state.dealtCount;
+  let runningCount = state.runningCount;
 
   while (true) {
     const hv = handValue(dealerCards);
     const shouldHit =
-      hv.value < 17 ||
-      (state.options.dealerHitsSoft17 && hv.value === 17 && hv.isSoft);
+      hv.value < DEALER_STAND_VALUE ||
+      (state.options.dealerHitsSoft17 && hv.value === DEALER_STAND_VALUE && hv.isSoft);
 
     if (!shouldHit) break;
     if (shoe.length === 0) break;
@@ -381,12 +424,14 @@ export function playDealer(state: BlackjackState): BlackjackState {
     dealerCards = [...dealerCards, card];
     shoe = newShoe;
     dealtCount++;
+    runningCount += hiLoValue(card);
   }
 
   return settleHands({
     ...state,
     shoe,
     dealtCount,
+    runningCount,
     dealerHand: { cards: dealerCards, holeCardRevealed: true },
   });
 }
@@ -421,16 +466,16 @@ export function settleHands(state: BlackjackState): BlackjackState {
       } else {
         result = 'blackjack';
         const payout = state.options.blackjackPayout === '3:2'
-          ? totalBet * 1.5
-          : totalBet * 1.2;
+          ? totalBet * PAYOUT_NATURAL_3_2
+          : totalBet * PAYOUT_NATURAL_6_5;
         balance += totalBet + payout;
       }
     } else if (dealerHv.isBust) {
       result = 'win';
-      balance += totalBet * 2;
+      balance += totalBet * WIN_PAYOUT_MULTIPLIER;
     } else if (playerHv.value > dealerHv.value) {
       result = 'win';
-      balance += totalBet * 2;
+      balance += totalBet * WIN_PAYOUT_MULTIPLIER;
     } else if (playerHv.value === dealerHv.value) {
       result = 'push';
       balance += totalBet;
@@ -467,6 +512,7 @@ export function nextRound(state: BlackjackState): BlackjackState | null {
       dealerHand: { cards: [], holeCardRevealed: false },
       phase: 'betting',
       currentBet: state.currentBet, // keep last bet as default
+      runningCount: 0, // reset count on new shoe
     };
   }
 
@@ -487,7 +533,7 @@ export function canSplit(state: BlackjackState): boolean {
   if (state.phase !== 'playing') return false;
   const hand = state.playerHands[state.activeHandIndex];
   if (!hand || hand.status !== 'active') return false;
-  if (hand.cards.length !== 2) return false;
+  if (hand.cards.length !== INITIAL_HAND_SIZE) return false;
 
   const [a, b] = hand.cards;
   if (!a || !b) return false;
@@ -507,7 +553,7 @@ export function canDoubleDown(state: BlackjackState): boolean {
   if (state.phase !== 'playing') return false;
   const hand = state.playerHands[state.activeHandIndex];
   if (!hand || hand.status !== 'active') return false;
-  if (hand.cards.length !== 2) return false;
+  if (hand.cards.length !== INITIAL_HAND_SIZE) return false;
   if (hand.fromSplit && !state.options.doubleAfterSplit) return false;
   if (state.balance < hand.bet) return false;
   return true;
