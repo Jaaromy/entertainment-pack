@@ -14,6 +14,7 @@ import TableauPile from './TableauPile';
 import OptionsDialog from './OptionsDialog';
 import MenuBar from './MenuBar';
 import CardView from './CardView';
+import HelpModal from '@/shared/components/HelpModal';
 import '../klondike.css';
 
 interface KlondikeGameProps {
@@ -65,6 +66,7 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
   } = useKlondike();
 
   const [showOptions, setShowOptions] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [cardSize, setCardSize] = useState<'normal' | 'large'>(
     () => loadSettings()?.cardSize ?? 'large'
   );
@@ -207,6 +209,7 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
           onOptions={() => setShowOptions(true)}
           onStats={() => onNavigate('stats')}
           onGallery={() => onNavigate('gallery')}
+          onHelp={() => setShowHelp(true)}
           onHome={onHome}
         />
 
@@ -308,6 +311,32 @@ export default function KlondikeGame({ onNavigate, onHome }: KlondikeGameProps) 
             setShowOptions(false);
           }}
           onClose={() => setShowOptions(false)}
+        />
+      )}
+
+      {showHelp && (
+        <HelpModal
+          title="Klondike Controls"
+          sections={[
+            {
+              title: 'Mouse',
+              controls: [
+                { action: 'Click card', description: 'Select or move a card' },
+                { action: 'Double-click', description: 'Send card to foundation' },
+                { action: 'Right-click', description: 'Send card to foundation' },
+                { action: 'Drag', description: 'Move card(s) to another pile' },
+              ],
+            },
+            {
+              title: 'Board',
+              controls: [
+                { action: 'Double-click empty area', description: 'Auto-complete (move all cards to foundations)' },
+                { action: 'Right-click empty area', description: 'Auto-complete' },
+                { action: 'Click stock pile', description: 'Draw card(s) from stock' },
+              ],
+            },
+          ]}
+          onClose={() => setShowHelp(false)}
         />
       )}
     </div>

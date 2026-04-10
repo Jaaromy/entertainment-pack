@@ -8,10 +8,11 @@ interface MenuBarProps {
   onOptions: () => void;
   onStats: () => void;
   onGallery: () => void;
+  onHelp: () => void;
   onHome?: () => void;
 }
 
-export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onStats, onGallery, onHome }: MenuBarProps) {
+export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onStats, onGallery, onHelp, onHome }: MenuBarProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,6 +50,8 @@ export default function MenuBar({ canUndo, score, onDeal, onUndo, onOptions, onS
             <div className="menu-divider" />
             <button className="menu-option" onClick={() => pick(onStats)}>Stats</button>
             <button className="menu-option" onClick={() => pick(onGallery)}>Card Gallery</button>
+            <div className="menu-divider" />
+            <button className="menu-option" onClick={() => pick(onHelp)}>Help</button>
             {onHome && <>
               <div className="menu-divider" />
               <button className="menu-option" onClick={() => pick(onHome)}>All Games</button>

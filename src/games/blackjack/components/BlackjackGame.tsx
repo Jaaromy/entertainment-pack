@@ -6,6 +6,7 @@ import PlayerHand from './PlayerHand';
 import ActionBar from './ActionBar';
 import BlackjackStatsScreen from './BlackjackStatsScreen';
 import BlackjackOptionsDialog from './BlackjackOptionsDialog';
+import HelpModal from '@/shared/components/HelpModal';
 import '../blackjack.css';
 
 interface BlackjackGameProps {
@@ -35,6 +36,7 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
 
   const [view, setView] = useState<'game' | 'stats'>('game');
   const [showOptions, setShowOptions] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   if (view === 'stats') {
     return (
@@ -59,6 +61,7 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
           <button className="menu-deal-button" onClick={onUndo} disabled={!canUndoAction}>Undo</button>
           <button className="menu-deal-button" onClick={() => setShowOptions(true)}>Options</button>
           <button className="menu-deal-button" onClick={() => setView('stats')}>Stats</button>
+          <button className="menu-deal-button" onClick={() => setShowHelp(true)}>Help</button>
           {onHome && <button className="menu-deal-button" onClick={onHome}>All Games</button>}
         </div>
         <div className="bj-shoe-tracker">
@@ -127,6 +130,33 @@ export default function BlackjackGame({ onHome }: BlackjackGameProps) {
           cardSize={cardSize}
           onConfirm={(opts, size) => { onSaveOptions(opts, size); setShowOptions(false); }}
           onCancel={() => setShowOptions(false)}
+        />
+      )}
+
+      {showHelp && (
+        <HelpModal
+          title="Blackjack Controls"
+          sections={[
+            {
+              title: 'Betting',
+              controls: [
+                { action: 'Click chip', description: 'Add that chip value to your bet' },
+                { action: 'Clear', description: 'Remove your current bet' },
+                { action: 'Deal', description: 'Deal cards and start the round' },
+              ],
+            },
+            {
+              title: 'Playing',
+              controls: [
+                { action: 'Hit', description: 'Draw another card' },
+                { action: 'Stand', description: 'End your turn' },
+                { action: 'Double Down', description: 'Double your bet and draw exactly one more card' },
+                { action: 'Split', description: 'Split a matching pair into two hands' },
+                { action: 'Undo', description: 'Undo your last action' },
+              ],
+            },
+          ]}
+          onClose={() => setShowHelp(false)}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import CardView from '@/shared/components/CardView'
+import HelpModal from '@/shared/components/HelpModal'
 import { emptySlotStyle } from '@/shared/spriteSheet'
 import { useFreecell } from './hooks/useFreecell'
 import { CardLocation } from './types'
@@ -47,6 +48,7 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
   }
 
   const [gameMenuOpen, setGameMenuOpen] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
   const gameMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -210,6 +212,8 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
                 <button className="menu-option" onClick={() => pickGameMenu(() => {
                   if (window.confirm('Reset all FreeCell stats? This cannot be undone.')) resetStats()
                 })}>Reset Stats</button>
+                <div className="menu-divider" />
+                <button className="menu-option" onClick={() => pickGameMenu(() => setShowHelp(true))}>Help</button>
                 {onHome && <>
                   <div className="menu-divider" />
                   <button className="menu-option" onClick={() => pickGameMenu(onHome)}>All Games</button>
@@ -324,6 +328,33 @@ export default function FreeCellGame({ onHome }: FreeCellGameProps) {
         <span>Streak: {stats.currentStreak}/{stats.bestStreak}</span>
       </div>
     </div>
+
+    {showHelp && (
+      <HelpModal
+        title="FreeCell Controls"
+        sections={[
+          {
+            title: 'Mouse',
+            controls: [
+              { action: 'Click card', description: 'Select a card (or move selected card here)' },
+              { action: 'Double-click top card', description: 'Send card to a free cell' },
+              { action: 'Right-click top card', description: 'Send card to foundation' },
+              { action: 'Drag', description: 'Move card(s) to another column, free cell, or foundation' },
+            ],
+          },
+          {
+            title: 'Rules',
+            controls: [
+              { action: 'Free cells', description: 'Temporarily park one card each (top-left)' },
+              { action: 'Foundations', description: 'Build Ace→King by suit to win (top-right)' },
+              { action: 'Tableau', description: 'Stack in descending rank, alternating color' },
+              { action: 'Supermove', description: 'Move multiple cards at once — limited by free cells and empty columns' },
+            ],
+          },
+        ]}
+        onClose={() => setShowHelp(false)}
+      />
+    )}
     </div>
   )
 }

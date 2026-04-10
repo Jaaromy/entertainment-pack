@@ -408,6 +408,52 @@
 }
 
 /* =========================================================
+   Help Modal
+   ========================================================= */
+
+.help-modal-box {
+  min-width: 320px;
+  max-width: 480px;
+}
+
+.help-modal-section {
+  margin-bottom: 16px;
+}
+
+.help-modal-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.help-modal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.help-modal-table td {
+  padding: 5px 0;
+  vertical-align: top;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.help-modal-action {
+  font-weight: 600;
+  white-space: nowrap;
+  padding-right: 16px !important;
+  color: #d4f7d4 !important;
+  width: 40%;
+}
+
+.help-modal-desc {
+  color: rgba(255,255,255,0.85) !important;
+}
+
+/* =========================================================
    Stats screen
    ========================================================= */
 
